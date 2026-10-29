@@ -140,9 +140,9 @@ button { font: inherit; color: inherit; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
 
 /* 패널 */
-.tabs { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; padding-bottom: 6px; }
 .tab {
-  flex: 0 0 auto; min-height: 44px; padding: 8px 14px; border-radius: 22px;
+  flex: 1 0 auto; min-height: 44px; padding: 8px 8px; font-size: 15px; border-radius: 22px;
   border: 1px solid var(--line); background: var(--paper); font-weight: 700; cursor: pointer;
 }
 .tab[aria-selected='true'] { background: var(--tomato); border-color: var(--tomato-deep); color: #fff; }

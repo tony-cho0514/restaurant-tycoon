@@ -1,0 +1,110 @@
+/* 가게 장면 */
+.scene {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: linear-gradient(#f3e3c6 0 58%, #c99a6b 58% 100%);
+  background-size: cover;
+  background-position: center;
+  box-shadow: var(--shadow);
+}
+.scene-placeholder .ph {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 700;
+}
+.scene-placeholder .oven { background: #b5652e; color: #fff; padding: 22px 26px; border-radius: 40px 40px 10px 10px; }
+.scene-placeholder .counter { background: #8a5a36; color: #fff; padding: 14px 60px; }
+.scene-placeholder .door { background: #6b7a3a; color: #fff; padding: 34px 16px; border-radius: 30px 30px 4px 4px; }
+
+.sprite {
+  position: absolute;
+  left: var(--tx);
+  top: var(--ty);
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+}
+.sprite img { display: block; height: 100%; width: auto; }
+.sprite.customer {
+  height: 22%;
+  aspect-ratio: 3 / 4;
+  animation: walk 1.2s ease-out both, fadeout 0.3s ease-in 1.2s both;
+}
+.sprite.customer:not(:has(img)) { width: 26px; height: 52px; border-radius: 13px 13px 6px 6px; }
+.sprite.customer.v0:not(:has(img)) { background: #e07a5f; }
+.sprite.customer.v1:not(:has(img)) { background: #3d5a80; }
+.sprite.customer.v2:not(:has(img)) { background: #81b29a; }
+.sprite.customer.v3:not(:has(img)) { background: #b08968; }
+.sprite.rider {
+  height: 18%;
+  aspect-ratio: 4 / 3;
+  animation: walk 1.5s ease-in both;
+}
+.sprite.rider:not(:has(img)) { width: 64px; height: 40px; border-radius: 20px 20px 8px 8px; background: var(--tomato); }
+.sprite.pizza {
+  height: 12%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  animation: pop 0.4s ease-out both, fadeout 0.3s ease-in 1.1s both;
+}
+.sprite.pizza:not(:has(img)) { width: 44px; height: 44px; border-radius: 50%; background: radial-gradient(#f4c542 55%, #c9822e 56%); }
+
+@keyframes walk {
+  from { left: var(--fx); top: var(--fy); }
+  to { left: var(--tx); top: var(--ty); }
+}
+@keyframes pop {
+  0% { scale: 0.6; opacity: 0; }
+  60% { scale: 1.1; opacity: 1; }
+  100% { scale: 1; opacity: 1; }
+}
+@keyframes fadeout { to { opacity: 0; } }
+
+.tint, .weather { position: absolute; inset: 0; pointer-events: none; transition: background 1.5s; }
+.weather.w-rain {
+  background-image: repeating-linear-gradient(105deg, rgba(120, 150, 200, 0.35) 0 2px, transparent 2px 14px);
+  background-size: 100% 200%;
+  animation: rain 0.6s linear infinite;
+}
+.weather.w-cold {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.9) 1.5px, transparent 2px);
+  background-size: 28px 28px;
+  animation: snow 6s linear infinite;
+}
+.weather.w-heat { background: rgba(255, 170, 60, 0.12); }
+@keyframes rain { to { background-position: 0 100%; } }
+@keyframes snow { to { background-position: 40px 280px; } }
+
+.scene.mood-crisis { box-shadow: inset 0 0 60px rgba(192, 57, 43, 0.45), var(--shadow); }
+.scene.mood-opportunity { box-shadow: inset 0 0 60px rgba(217, 165, 33, 0.5), var(--shadow); }
+
+.floats { position: absolute; top: 12px; right: 12px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; pointer-events: none; }
+.float {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.9);
+  animation: rise 1.2s ease-out both;
+}
+.float.good { color: var(--good); }
+.float.bad { color: var(--bad); }
+@keyframes rise {
+  from { transform: translateY(12px); opacity: 0; }
+  20% { opacity: 1; }
+  to { transform: translateY(-16px); opacity: 0; }
+}
+
+/* 움직임 줄이기: 이동·튀어오름 없이 제자리에서 나타났다 사라짐 */
+.sprite.still { animation: fadein 0.3s ease-out both, fadeout 0.3s ease-in 1.1s both; }
+@keyframes fadein { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .weather { animation: none; }
+  .float { animation: fadein 0.3s ease-out both, fadeout 0.3s ease-in 0.9s both; }
+}

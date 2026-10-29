@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import type { GameState } from '../../sim/types';
 import { PauseModal, type TabId } from '../components/PauseModal';
 import { PlaybackBar } from '../components/PlaybackBar';
+import { ShopScene, moodOf } from '../components/ShopScene';
+import '../scene.css';
 import { usePlayback } from '../hooks/usePlayback';
 import type { PanelProps } from '../panels/common';
 import { InventoryPanel } from '../panels/InventoryPanel';
@@ -50,7 +52,12 @@ export function Main({ initial, now = Date.now, persist }: {
   return (
     <main className="main">
       <section className="stage">
-        <div className="scene-slot" />
+        <ShopScene
+          anim={pb.lastAnim}
+          hour={pb.lastAnim?.hour ?? pb.state.clock.hour}
+          weather={pb.state.economy.weather}
+          mood={moodOf(pb.state.news.active.filter((a) => a.untilDay >= pb.state.clock.day), pb.state.economy.cycle)}
+        />
         <PlaybackBar
           state={pb.state}
           now={clockNow}
