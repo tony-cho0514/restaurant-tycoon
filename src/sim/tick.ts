@@ -62,6 +62,7 @@ function openDay(s: GameState, rng: Rng) {
       noise: 1 + rng.normal(0, 0.02),
     });
   }
+  s.today.prices = { ...s.prices };
 
   const expired = expire(s.inventory, day);
   s.inventory = expired.inv;

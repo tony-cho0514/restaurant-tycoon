@@ -42,4 +42,9 @@ test('현금이 0 아래로 내려갈 때 한 번 멈춘다', () => {
   expect(n).toBe(1);
 });
 
+test('하루 기록에 그날 시세가 남는다(7일 전 대비 표시용)', () => {
+  let s = g(); for (let i = 0; i < 8 * 11; i++) s = advanceTick(s).state;
+  expect(s.ledger.days[0].prices.mozzarella).toBeGreaterThan(0); expect(s.ledger.days[7].prices.veg).toBeGreaterThan(0);
+});
+
 test('playTick은 충전이 없으면 null', () => { const s = { ...g(), charge: { ticks: 0, lastAccruedAt: 0 } }; expect(playTick(s, 0)).toBeNull(); });
