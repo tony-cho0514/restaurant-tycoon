@@ -3,6 +3,7 @@ import { NEIGHBORHOODS, cashAfterSetup, type NeighborhoodId } from '../../sim/ne
 import { SaveImportError } from '../../sim/save';
 import type { GameState } from '../../sim/types';
 import { manwon } from '../format';
+import { NEIGHBORHOOD_SCENE } from '../icons';
 import { readSaveFile } from '../saveFile';
 
 export const NEIGHBORHOOD_THUMBS: Record<NeighborhoodId, string> = { campus: '', office: '', residential: '' };
@@ -57,7 +58,9 @@ export function NewGame({ onStart, onImport, notice }: {
         {Object.values(NEIGHBORHOODS).map((n) => (
           <article key={n.id} className="card hood">
             <div className="thumb" data-hood={n.id}>
-              {NEIGHBORHOOD_THUMBS[n.id] && <img src={NEIGHBORHOOD_THUMBS[n.id]} alt="" />}
+              {NEIGHBORHOOD_THUMBS[n.id]
+                ? <img src={NEIGHBORHOOD_THUMBS[n.id]} alt="" />
+                : <div className="thumb-scene" aria-hidden="true">{NEIGHBORHOOD_SCENE[n.id].map((e, i) => <span key={i} className={`ts ts${i}`}>{e}</span>)}</div>}
             </div>
             <h2>{n.name}</h2>
             <ul className="traits">

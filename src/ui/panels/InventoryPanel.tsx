@@ -4,6 +4,7 @@ import { manualBuyDays, stockOf } from '../../sim/inventory';
 import { estimatedUsage } from '../../sim/tick';
 import { calendar } from '../../sim/time';
 import { won } from '../format';
+import { INGREDIENT_ICON } from '../icons';
 import type { PanelProps } from './common';
 
 const BUY_DAYS = [7, 30, 60];
@@ -43,6 +44,7 @@ export function InventoryPanel({ state, update }: PanelProps) {
           const change = before ? state.prices[id] / before - 1 : 0;
           return (
             <li key={id} className="row inv">
+              <span className="row-icon" aria-hidden="true">{INGREDIENT_ICON[id]}</span>
               <div className="row-main">
                 <strong>{def.name}</strong>
                 <span className="sub">
@@ -50,12 +52,19 @@ export function InventoryPanel({ state, update }: PanelProps) {
                   {before ? <span className={change > 0.005 ? 'up' : change < -0.005 ? 'down' : ''}> {change > 0.005 ? '▲' : change < -0.005 ? '▼' : '–'}{Math.abs(change * 100).toFixed(1)}%</span> : null}
                 </span>
                 <span className="rule">
-                  자동 발주: {state.rules[id].reorderDays}일치 아래로 떨어지면
-                  <button className="btn mini" aria-label={`${def.name} 발주 기준 줄이기`} onClick={() => setRule(id, 'reorderDays', -1)}>−</button>
-                  <button className="btn mini" aria-label={`${def.name} 발주 기준 늘리기`} onClick={() => setRule(id, 'reorderDays', 1)}>+</button>
-                  {state.rules[id].targetDays}일치까지
-                  <button className="btn mini" aria-label={`${def.name} 목표 줄이기`} onClick={() => setRule(id, 'targetDays', -1)}>−</button>
-                  <button className="btn mini" aria-label={`${def.name} 목표 늘리기`} onClick={() => setRule(id, 'targetDays', 1)}>+</button>
+                  <span>자동 발주</span>
+                  <span className="mini-stepper">
+                    <span>기준</span>
+                    <button className="btn mini" aria-label={`${def.name} 발주 기준 줄이기`} onClick={() => setRule(id, 'reorderDays', -1)}>−</button>
+                    <b>{state.rules[id].reorderDays}일</b>
+                    <button className="btn mini" aria-label={`${def.name} 발주 기준 늘리기`} onClick={() => setRule(id, 'reorderDays', 1)}>+</button>
+                  </span>
+                  <span className="mini-stepper">
+                    <span>목표</span>
+                    <button className="btn mini" aria-label={`${def.name} 목표 줄이기`} onClick={() => setRule(id, 'targetDays', -1)}>−</button>
+                    <b>{state.rules[id].targetDays}일</b>
+                    <button className="btn mini" aria-label={`${def.name} 목표 늘리기`} onClick={() => setRule(id, 'targetDays', 1)}>+</button>
+                  </span>
                 </span>
               </div>
               <div className="buys">

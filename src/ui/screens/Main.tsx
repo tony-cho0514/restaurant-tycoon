@@ -6,6 +6,7 @@ import { SettingsMenu } from '../components/SettingsMenu';
 import { ShopScene, moodOf } from '../components/ShopScene';
 import '../scene.css';
 import { usePlayback } from '../hooks/usePlayback';
+import { TAB_ICON } from '../icons';
 import type { PanelProps } from '../panels/common';
 import { InventoryPanel } from '../panels/InventoryPanel';
 import { LedgerPanel } from '../panels/LedgerPanel';
@@ -79,7 +80,7 @@ export function Main({ initial, now = Date.now, persist, saveFailed = false, onR
       <section className="panels">
         <nav className="tabs" role="tablist">
           {TABS.map((t) => (
-            <button key={t.id} role="tab" aria-selected={tab === t.id} className="tab" onClick={() => setTab(t.id)}>{t.label}</button>
+            <button key={t.id} role="tab" aria-selected={tab === t.id} className="tab" onClick={() => setTab(t.id)}><span className="tab-icon" aria-hidden="true">{TAB_ICON[t.id]}</span><span>{t.label}</span></button>
           ))}
         </nav>
         <div className="panel-body">

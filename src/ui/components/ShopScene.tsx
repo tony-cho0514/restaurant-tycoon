@@ -3,6 +3,7 @@ import type { Cycle, Weather } from '../../sim/economy';
 import type { ActiveShock } from '../../sim/news';
 import type { AnimEvents } from '../../sim/tick';
 import { won } from '../format';
+import { CUSTOMER_ICONS, PIZZA_ICON, RIDER_ICON } from '../icons';
 import { SCENE_ASSETS, SCENE_LAYOUT } from '../sceneLayout';
 
 export type Mood = 'normal' | 'crisis' | 'opportunity';
@@ -84,9 +85,16 @@ export function ShopScene({ anim, hour, weather, mood }: { anim: AnimEvents | nu
     <div className={`scene mood-${mood}`} style={SCENE_ASSETS.background ? { backgroundImage: `url(${SCENE_ASSETS.background})` } : undefined}>
       {!SCENE_ASSETS.background && (
         <div className="scene-placeholder" aria-hidden="true">
-          <span className="ph oven" style={{ left: `${L.oven.x}%`, top: `${L.oven.y}%` }}>오븐</span>
+          <span className="ph oven" style={{ left: `${L.oven.x}%`, top: `${L.oven.y}%` }}>🔥</span>
           <span className="ph counter" style={{ left: `${L.counter.x}%`, top: `${L.counter.y}%` }}>카운터</span>
-          <span className="ph door" style={{ left: `${L.door.x}%`, top: `${L.door.y}%` }}>문</span>
+          <span className="ph door" style={{ left: `${L.door.x}%`, top: `${L.door.y}%` }}>🚪</span>
+          <span className="ph decor" style={{ left: '62%', top: '30%' }}>🖼️</span>
+          <span className="ph decor" style={{ left: '76%', top: '28%' }}>🍕</span>
+          <span className="ph decor" style={{ left: '94%', top: '52%' }}>🪴</span>
+          <span className="ph decor" style={{ left: '58%', top: '74%' }}>🪑</span>
+          <span className="ph decor table" style={{ left: '66%', top: '78%' }}>🍽️</span>
+          <span className="ph decor" style={{ left: '74%', top: '74%' }}>🪑</span>
+          <span className="ph sign" style={{ left: '50%', top: '10%' }}>🍕 PIZZA 🍕</span>
         </div>
       )}
       {sprites.map((s) => {
@@ -98,7 +106,7 @@ export function ShopScene({ anim, hour, weather, mood }: { anim: AnimEvents | nu
           : s.kind === 'rider' ? SCENE_ASSETS.rider : SCENE_ASSETS.pizza;
         return (
           <div key={s.id} data-sprite={s.kind} className={`sprite ${s.kind} v${s.variant}${s.still ? ' still' : ''}`} style={style}>
-            {img ? <img src={img} alt="" draggable={false} /> : null}
+            {img ? <img src={img} alt="" draggable={false} /> : <span className="emoji">{s.kind === 'customer' ? CUSTOMER_ICONS[s.variant % CUSTOMER_ICONS.length] : s.kind === 'rider' ? RIDER_ICON : PIZZA_ICON}</span>}
           </div>
         );
       })}

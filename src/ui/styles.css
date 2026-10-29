@@ -235,3 +235,30 @@ body { touch-action: manipulation; padding: env(safe-area-inset-top) env(safe-ar
 .recovery .card { max-width: 520px; display: flex; flex-direction: column; gap: 10px; }
 .recovery h2 { margin: 0; }
 .recovery-actions { display: flex; flex-direction: column; gap: 8px; }
+
+/* 그림 문자 아이콘 */
+.row-icon { font-size: 28px; line-height: 1; width: 40px; text-align: center; flex: 0 0 auto; position: relative; }
+.row-icon small { position: absolute; right: -2px; bottom: -4px; font-size: 16px; }
+.row { justify-content: flex-start; }
+.row .row-main { flex: 1; }
+.stat-icon { font-size: 22px; line-height: 1; }
+.news-icon { font-size: 20px; }
+.modal-icon { font-size: 44px; line-height: 1; }
+.thumb { position: relative; }
+.thumb-scene { position: absolute; inset: 0; }
+.thumb-scene .ts { position: absolute; line-height: 1; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.15)); }
+.thumb-scene .ts0 { font-size: 64px; left: 8%; top: 18%; }
+.thumb-scene .ts1 { font-size: 36px; left: 46%; top: 12%; }
+.thumb-scene .ts2 { font-size: 30px; left: 70%; top: 40%; }
+.thumb-scene .ts3 { font-size: 34px; left: 42%; top: 58%; }
+.thumb-scene .ts4 { font-size: 40px; left: 76%; top: 8%; }
+.thumb-scene .ts5 { font-size: 38px; left: 18%; top: 62%; }
+.tabs { flex-wrap: nowrap; }
+.tab { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; font-size: 13px; border-radius: 14px; white-space: nowrap; }
+.tab-icon { font-size: 20px; line-height: 1; }
+.inv { flex-wrap: wrap; align-items: center; }
+.inv .row-main { flex: 1 1 220px; }
+.inv .buys { margin-left: auto; }
+.rule { gap: 10px; margin-top: 6px; }
+.mini-stepper { display: inline-flex; align-items: center; gap: 4px; background: var(--cream); border-radius: 10px; padding: 2px 4px; }
+.mini-stepper b { min-width: 34px; text-align: center; color: var(--ink); }

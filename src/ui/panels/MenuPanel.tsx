@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { previewMenuPrice } from '../../sim/levers';
 import { MENU, clampMenuPrice, unitCost, type MenuItemId } from '../../sim/menu';
 import { pct, won } from '../format';
+import { MENU_ICON, PIZZA_ICON } from '../icons';
 import { marginCtx, type PanelProps } from './common';
 
 const IDS = Object.keys(MENU) as MenuItemId[];
@@ -22,6 +23,7 @@ export function MenuPanel({ state, update }: PanelProps) {
           const price = draft[id];
           return (
             <li key={id} className="row">
+              <span className="row-icon" aria-hidden="true">{def.isPizza ? <>{PIZZA_ICON}<small>{MENU_ICON[id]}</small></> : MENU_ICON[id]}</span>
               <div className="row-main">
                 <strong>{def.name}</strong>
                 <span className="sub">원가 {won(cost)} · 원가율 {pct(cost / state.menuPrices[id])} · {def.isPizza ? '한 판' : '한 병'} 이익 {won(state.menuPrices[id] - cost)}</span>

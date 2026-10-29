@@ -3,6 +3,7 @@ import { profitOf } from '../../sim/ledger';
 import type { PauseReason } from '../../sim/tick';
 import type { GameState } from '../../sim/types';
 import { won } from '../format';
+import { newsIcon } from '../icons';
 
 export type TabId = 'status' | 'news' | 'menu' | 'inventory' | 'levers' | 'ledger';
 
@@ -24,10 +25,12 @@ export function PauseModal({ reason, state, now, onDismiss, onGoto }: {
   let body: React.ReactNode = null;
   let extra: React.ReactNode = null;
   let tone = 'neutral';
+  let icon = '📰';
 
   if (reason.kind === 'news') {
     const item = state.news.items.find((n) => n.id === reason.newsId);
     title = item?.headline ?? '새 소식';
+    if (item) icon = newsIcon(item);
     body = <p>{item?.body}</p>;
     tone = item?.tone ?? 'neutral';
     if (item?.kind === 'signal') {
@@ -40,6 +43,7 @@ export function PauseModal({ reason, state, now, onDismiss, onGoto }: {
     const prev = i > 0 ? months[i - 1] : null;
     const profit = m ? profitOf(m) : 0;
     title = '한 달 장사가 끝났어요';
+    icon = '📒';
     body = m && (
       <dl className="facts">
         <div><dt>매출</dt><dd>{won(m.revenueHall + m.revenueDelivery)}</dd></div>
@@ -51,17 +55,20 @@ export function PauseModal({ reason, state, now, onDismiss, onGoto }: {
     extra = <button className="btn" onClick={() => { onGoto('ledger'); onDismiss({ resume: false }); }}>장부 보기</button>;
   } else if (reason.kind === 'cashNegative') {
     title = '통장이 마이너스예요';
+    icon = '💸';
     body = <p>지금 쓸 돈이 바닥났어요. 재료를 너무 많이 사 두지 않았는지, 가격이 원가보다 낮지 않은지 장부를 확인해 보세요.</p>;
     tone = 'bad';
     extra = <button className="btn" onClick={() => { onGoto('ledger'); onDismiss({ resume: false }); }}>장부 보기</button>;
   } else {
     title = '오늘 충전된 시간을 다 썼어요';
+    icon = '🌙';
     body = <p>내일 다시 와 주세요. 다음 1시간 영업은 약 {minutesToNextHour(state, now)}분 뒤에 충전돼요.</p>;
   }
 
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={title}>
       <div className={`modal card tone-${tone}`}>
+        <div className="modal-icon" aria-hidden="true">{icon}</div>
         <h2>{title}</h2>
         {body}
         <div className="modal-actions">

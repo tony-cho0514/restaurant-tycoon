@@ -30,13 +30,13 @@ export function StatusPanel({ state }: PanelProps) {
     <div className="panel">
       <h3>오늘 현황</h3>
       <div className="stats">
-        <div><span className="sub">홀 주문</span><strong>{t.hallOrders}건</strong></div>
-        <div><span className="sub">배달 주문</span><strong>{t.deliveryOrders}건</strong></div>
-        <div><span className="sub">오늘 매출</span><strong>{won(t.revenueHall + t.revenueDelivery)}</strong></div>
-        <div><span className="sub">놓친 주문(일손 부족)</span><strong className={t.lostOrders ? 'neg' : ''}>{t.lostOrders}건</strong></div>
-        <div><span className="sub">놓친 주문(재료 부족)</span><strong className={t.stockoutOrders ? 'neg' : ''}>{t.stockoutOrders}건</strong></div>
-        <div><span className="sub">홀 평점</span><strong>{stars(state.ratings.hall)}</strong></div>
-        <div><span className="sub">배달앱 평점</span><strong>{stars(state.ratings.delivery)}</strong></div>
+        <div><span className="stat-icon" aria-hidden="true">🍽️</span><span className="sub">홀 주문</span><strong>{t.hallOrders}건</strong></div>
+        <div><span className="stat-icon" aria-hidden="true">🛵</span><span className="sub">배달 주문</span><strong>{t.deliveryOrders}건</strong></div>
+        <div><span className="stat-icon" aria-hidden="true">💰</span><span className="sub">오늘 매출</span><strong>{won(t.revenueHall + t.revenueDelivery)}</strong></div>
+        <div><span className="stat-icon" aria-hidden="true">😓</span><span className="sub">놓친 주문(일손 부족)</span><strong className={t.lostOrders ? 'neg' : ''}>{t.lostOrders}건</strong></div>
+        <div><span className="stat-icon" aria-hidden="true">🫙</span><span className="sub">놓친 주문(재료 부족)</span><strong className={t.stockoutOrders ? 'neg' : ''}>{t.stockoutOrders}건</strong></div>
+        <div><span className="stat-icon" aria-hidden="true">🍽️</span><span className="sub">홀 평점</span><strong>{stars(state.ratings.hall)}</strong></div>
+        <div><span className="stat-icon" aria-hidden="true">📱</span><span className="sub">배달앱 평점</span><strong>{stars(state.ratings.delivery)}</strong></div>
       </div>
       {chips.length > 0 && (
         <div className="chips">

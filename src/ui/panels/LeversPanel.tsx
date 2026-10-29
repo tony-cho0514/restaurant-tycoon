@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { LEVERS, LEVER_IDS, previewLever, type LeverId } from '../../sim/levers';
 import { pct, pp, won } from '../format';
+import { LEVER_ICON } from '../icons';
 import { marginCtx, type PanelProps } from './common';
 
 const CHANNEL_LABEL = { hall: '홀', delivery: '배달', all: '전체' } as const;
@@ -21,6 +22,7 @@ export function LeversPanel({ state, update }: PanelProps) {
         {LEVER_IDS.map((id) => (
           <li key={id}>
             <button className={`row lever ${selected === id ? 'selected' : ''}`} onClick={() => setSelected(id)}>
+              <span className="row-icon" aria-hidden="true">{LEVER_ICON[id]}</span>
               <span className="row-main">
                 <strong>{LEVERS[id].name}</strong>
                 <span className="sub">{LEVERS[id].description}</span>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { NewsItem } from '../../sim/news';
 import { formatClock } from '../../sim/time';
+import { newsIcon } from '../icons';
 import type { PanelProps } from './common';
 
 const BADGE: Partial<Record<NewsItem['kind'], string>> = { signal: '신호', fire: '발생', fizzle: '빗나감', announce: '발표' };
@@ -19,6 +20,7 @@ export function NewsPanel({ state }: PanelProps) {
         {items.map((n) => (
           <li key={n.id} className={`news-item tone-${n.tone}`}>
             <div className="news-meta">
+              <span className="news-icon" aria-hidden="true">{newsIcon(n)}</span>
               {BADGE[n.kind] && <span className={`badge kind-${n.kind}`}>{BADGE[n.kind]}</span>}
               <span className="sub">{formatClock({ day: n.day, hour: 11 }).replace(/ \d+시$/, '')}</span>
             </div>
