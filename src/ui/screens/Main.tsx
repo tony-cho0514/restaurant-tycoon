@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { GameState } from '../../sim/types';
 import { PauseModal, type TabId } from '../components/PauseModal';
 import { PlaybackBar } from '../components/PlaybackBar';
+import { SettingsMenu } from '../components/SettingsMenu';
 import { ShopScene, moodOf } from '../components/ShopScene';
 import '../scene.css';
 import { usePlayback } from '../hooks/usePlayback';
@@ -33,10 +34,12 @@ function ActivePanel({ tab, ...p }: PanelProps & { tab: TabId }) {
   }
 }
 
-export function Main({ initial, now = Date.now, persist }: {
+export function Main({ initial, now = Date.now, persist, saveFailed = false, onReset = () => {} }: {
   initial: GameState;
   now?: () => number;
   persist: (s: GameState) => void;
+  saveFailed?: boolean;
+  onReset?: () => void;
 }) {
   const pb = usePlayback(initial, { now, persist });
   const [tab, setTab] = useState<TabId>('status');
@@ -51,7 +54,12 @@ export function Main({ initial, now = Date.now, persist }: {
 
   return (
     <main className="main">
+      {saveFailed && <div className="save-warning" role="alert">저장 공간이 부족해요. 설정에서 저장 파일을 내보내 두세요.</div>}
       <section className="stage">
+        <div className="shop-title">
+          <strong>{pb.state.shopName}</strong>
+          <SettingsMenu state={pb.state} onReplace={pb.replace} onReset={onReset} />
+        </div>
         <ShopScene
           anim={pb.lastAnim}
           hour={pb.lastAnim?.hour ?? pb.state.clock.hour}
