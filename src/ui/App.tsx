@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { createNewGame } from '../sim/newGame';
 import { loadGame, saveGame } from '../sim/save';
 import type { GameState } from '../sim/types';
+import { Main } from './screens/Main';
 import { NewGame } from './screens/NewGame';
 import './styles.css';
 
@@ -20,5 +21,9 @@ export function App() {
       />
     );
   }
-  return <p>가게 화면 준비 중</p>;
+  return <Main initial={game} persist={persist} />;
+}
+
+function persist(s: GameState) {
+  saveGame(s, localStorage);
 }

@@ -88,3 +88,53 @@ button { font: inherit; color: inherit; }
 @media (max-width: 900px), (orientation: portrait) {
   .cards { grid-template-columns: 1fr; }
 }
+
+/* 메인 화면: 가로 = 왼쪽 장면 60% + 오른쪽 패널 40%, 세로 = 위 장면 + 아래 패널 */
+.main {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 12px;
+  padding: 12px;
+}
+.stage { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.scene-slot { flex: 1; min-height: 0; border-radius: var(--radius); background: var(--line); }
+.panels { min-height: 0; display: flex; flex-direction: column; }
+@media (orientation: portrait) {
+  .main { grid-template-columns: 1fr; grid-template-rows: 45% 55%; }
+}
+
+.playbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  box-shadow: var(--shadow);
+}
+.playbar .play { width: 56px; height: 56px; border-radius: 50%; font-size: 20px; padding: 0; }
+.speeds { display: flex; gap: 4px; }
+.speeds .btn { padding: 6px 10px; }
+.speeds .btn[aria-pressed='true'] { background: var(--ink); color: #fff; border-color: var(--ink); }
+.playbar-info { flex: 1; min-width: 180px; }
+.clock { font-weight: 700; }
+.charge { color: var(--ink-soft); font-size: 14px; }
+.cash { display: flex; flex-direction: column; align-items: flex-end; font-weight: 800; font-size: 20px; font-variant-numeric: tabular-nums; }
+.cash-label { font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+.neg { color: var(--bad); }
+
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(30, 20, 15, 0.45);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px; z-index: 50;
+}
+.modal { width: min(520px, 100%); display: flex; flex-direction: column; gap: 10px; }
+.modal h2 { margin: 0; font-size: 20px; }
+.modal p { margin: 0; }
+.modal.tone-bad { border-top: 6px solid var(--bad); }
+.modal.tone-good { border-top: 6px solid var(--gold); }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
