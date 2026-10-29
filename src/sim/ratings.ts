@@ -1,3 +1,4 @@
+import { SATISFACTION_BASE } from './balance';
 import type { Levers } from './levers';
 import type { Rng } from './rng';
 
@@ -13,7 +14,7 @@ export function satisfaction(
   ctx: { wait: number; priceIndex: number; priceSensitivity: number; levers: Levers },
   rng: Rng,
 ): number {
-  let s = 3.8;
+  let s = SATISFACTION_BASE;
   if (ctx.levers.premiumCheese) s += 0.4;
   if (ch === 'delivery') {
     if (ctx.levers.freeCola) s += 0.3;

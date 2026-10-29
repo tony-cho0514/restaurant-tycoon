@@ -17,6 +17,11 @@ test('침체기 환율이 평균적으로 더 오른다', () => {
   expect(avg('recession')).toBeGreaterThan(avg('normal'));
 });
 
+test('환율이 한쪽으로 쏠려도 시간이 지나면 기준 근처로 돌아온다', () => {
+  let s = 0; for (let seed = 1; seed <= 100; seed++) { const r = new Rng(seed); let e = { ...initialEconomy(r), fx: 1700, cycleWeeksLeft: 999 }; for (let i = 0; i < 52; i++) e = stepEconomyWeek(e, r); s += e.fx; }
+  expect(s / 100).toBeLessThan(1500);
+});
+
 test('계절별 날씨', () => {
   const r = new Rng(5); const w: Record<string, number> = {};
   for (let i = 0; i < 20000; i++) { const x = rollWeather('winter', r); w[x] = (w[x] ?? 0) + 1; expect(rollWeather('summer', r)).not.toBe('cold'); }

@@ -3,6 +3,8 @@ export const START_CAPITAL = 100_000_000;
 export const INTERIOR_AND_EQUIPMENT = 30_000_000;
 
 export const FX_BASE = 1350;
+/** 환율이 기준(FX_BASE)에서 멀어지면 매주 그 차이(로그)의 이만큼씩 되돌아온다. */
+export const FX_MEAN_REVERSION = 0.03;
 export const IMPORT_PASS_THROUGH = 0.7;
 export const PREMIUM_CHEESE_MULT = 1.3;
 export const MISC_COST_PER_PIZZA = 800;
@@ -20,6 +22,9 @@ export const START_MIN_WAGE = 10_030;
 export const STAFF_COUNT = 2;
 export const PIZZAS_PER_STAFF_HOUR = 7;
 export const OVEN_CAP_PER_HOUR = 16;
+
+/** 운영 수단 없이 평범하게 장사할 때 손님 만족도의 평균. 평점은 이 값 근처로 수렴한다. */
+export const SATISFACTION_BASE = 4.4;
 
 export const PRICE_ELASTICITY = 1.5;
 export const RECESSION_SENSITIVITY_MULT = 1.3;

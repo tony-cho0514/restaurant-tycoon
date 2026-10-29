@@ -1,6 +1,6 @@
 // 가상 경제. 숫자는 지어낸 것이지만 현실 원리대로 움직인다.
 // 경기 전환은 여기서 하지 않고, news.ts가 신호와 함께 일으킨다.
-import { START_MIN_WAGE } from './balance';
+import { FX_BASE, FX_MEAN_REVERSION, START_MIN_WAGE } from './balance';
 import type { Rng } from './rng';
 import type { Season } from './time';
 
@@ -42,7 +42,8 @@ export function initialEconomy(rng: Rng): Economy {
 }
 
 export function stepEconomyWeek(e: Economy, rng: Rng): Economy {
-  const fx = Math.min(1800, Math.max(1000, e.fx * (1 + rng.normal(FX_DRIFT[e.cycle], 0.008))));
+  const drift = FX_DRIFT[e.cycle] + FX_MEAN_REVERSION * Math.log(FX_BASE / e.fx);
+  const fx = Math.min(1800, Math.max(1000, e.fx * (1 + rng.normal(drift, 0.008))));
   return {
     ...e,
     fx,
