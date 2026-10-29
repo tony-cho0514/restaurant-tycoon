@@ -48,6 +48,7 @@ export function SettingsMenu({ state, onReplace, onReset }: {
           </label>
           <button className="btn danger" onClick={reset}>처음부터 다시</button>
           {message && <p className="sub" role="status">{message}</p>}
+          <p className="credit">3D 소재: Kenney (kenney.nl, CC0)</p>
         </div>
       )}
     </div>

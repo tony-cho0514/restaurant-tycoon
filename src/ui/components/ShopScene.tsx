@@ -1,10 +1,14 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { Cycle, Weather } from '../../sim/economy';
 import type { ActiveShock } from '../../sim/news';
 import type { AnimEvents } from '../../sim/tick';
 import { won } from '../format';
 import { CUSTOMER_ICONS, PIZZA_ICON, RIDER_ICON } from '../icons';
 import { SCENE_ASSETS, SCENE_LAYOUT } from '../sceneLayout';
+import { canUse3D } from '../three/support';
+
+// 3D 미니어처는 three.js가 무거워서 필요할 때만 따로 받는다.
+const ShopScene3D = lazy(() => import('../three/ShopScene3D'));
 
 export type Mood = 'normal' | 'crisis' | 'opportunity';
 
@@ -43,6 +47,9 @@ export function ShopScene({ anim, hour, weather, mood }: { anim: AnimEvents | nu
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const nextId = useRef(1);
   const count = useRef(0);
+  // 3D를 쓸 수 있으면 3D 미니어처, 아니면(또는 소재를 못 받으면) 그림 문자 가게
+  const [mode, setMode] = useState<'3d' | '2d'>(() => (canUse3D() ? '3d' : '2d'));
+  const still = prefersReducedMotion();
 
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
@@ -58,8 +65,8 @@ export function ShopScene({ anim, hour, weather, mood }: { anim: AnimEvents | nu
       const ids = new Set(newFloats.map((f) => f.id));
       later(1200, () => setFloats((f) => f.filter((x) => !ids.has(x.id))));
     }
+    if (mode === '3d') return; // 3D에서는 엔진이 손님·피자·배달을 직접 움직인다.
     // 움직임 줄이기 설정이면 이동 없이 제자리에서 나타났다 사라지게만 한다(그래도 가게가 돌아가는 건 보이게).
-    const still = prefersReducedMotion();
 
     const spawn = (kind: SpriteKind, n: number, gap: number) => {
       for (let i = 0; i < n; i++) {
@@ -78,12 +85,17 @@ export function ShopScene({ anim, hour, weather, mood }: { anim: AnimEvents | nu
     spawn('customer', Math.min(anim.hallArrivals, 6), 150);
     spawn('rider', Math.min(anim.deliveriesOut, 4), 150);
     spawn('pizza', Math.min(anim.pizzasBaked, 5), 100);
-  }, [anim]);
+  }, [anim, mode, still]);
 
   const L = SCENE_LAYOUT;
   return (
     <div className={`scene mood-${mood}`} style={SCENE_ASSETS.background ? { backgroundImage: `url(${SCENE_ASSETS.background})` } : undefined}>
-      {!SCENE_ASSETS.background && (
+      {mode === '3d' && (
+        <Suspense fallback={<div className="scene3d-loading">🍕 가게를 꾸미는 중…</div>}>
+          <ShopScene3D anim={anim} hour={hour} still={still} onFail={() => setMode('2d')} />
+        </Suspense>
+      )}
+      {mode === '2d' && !SCENE_ASSETS.background && (
         <div className="scene-placeholder" aria-hidden="true">
           <span className="ph oven" style={{ left: `${L.oven.x}%`, top: `${L.oven.y}%` }}>🔥</span>
           <span className="ph counter" style={{ left: `${L.counter.x}%`, top: `${L.counter.y}%` }}>카운터</span>
@@ -110,7 +122,7 @@ export function ShopScene({ anim, hour, weather, mood }: { anim: AnimEvents | nu
           </div>
         );
       })}
-      <div className="tint" style={{ background: hourTint(hour) }} />
+      {mode === '2d' && <div className="tint" style={{ background: hourTint(hour) }} />}
       <div className={`weather w-${weather}`} />
       <div className="floats">
         {floats.map((f) => <div key={f.id} className={`float ${f.tone}`}>{f.text}</div>)}

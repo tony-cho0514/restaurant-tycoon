@@ -9,7 +9,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icons/*.png', 'assets/*.webp'],
+      includeAssets: ['icons/*.png', 'assets/*.webp', 'models/**/*'],
       manifest: {
         name: '피자집 경영',
         short_name: '피자집 경영',
@@ -25,7 +25,8 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,png,webp,svg}'],
+        globPatterns: ['**/*.{js,css,html,png,webp,svg,glb}'],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
       },
     }),
   ],
