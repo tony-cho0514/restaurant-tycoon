@@ -70,10 +70,12 @@ export function usePlayback(initial: GameState, o: { now: () => number; persist:
     setPlaying(false);
   }, []);
 
-  const dismissPause = useCallback(() => {
+  /** 맨 앞 멈춤 창을 닫는다. resume: false면(「보기」로 닫을 때) 다시 재생하지 않는다. */
+  const dismissPause = useCallback((opts?: { resume?: boolean }) => {
     const next = pausesRef.current.slice(1);
     pausesRef.current = next;
     setPauses(next);
+    if (opts?.resume === false) autoPausedRef.current = false;
     if (next.length === 0 && autoPausedRef.current) {
       autoPausedRef.current = false;
       setPlaying(true);

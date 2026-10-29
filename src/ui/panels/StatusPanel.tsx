@@ -40,7 +40,7 @@ export function StatusPanel({ state }: PanelProps) {
       </div>
       {chips.length > 0 && (
         <div className="chips">
-          {chips.map((c) => <span key={c.text} className={`chip tone-${c.tone}`}>{c.text}</span>)}
+          {chips.map((c, i) => <span key={`${c.text}-${i}`} className={`chip tone-${c.tone}`}>{c.text}</span>)}
         </div>
       )}
       <h4>최근 7일 매출</h4>

@@ -1,4 +1,4 @@
-import { SATISFACTION_BASE } from './balance';
+import { LEVER_SAT_BONUS, SATISFACTION_BASE } from './balance';
 import type { Levers } from './levers';
 import type { Rng } from './rng';
 
@@ -11,14 +11,15 @@ export type Channel = 'hall' | 'delivery';
 
 export function satisfaction(
   ch: Channel,
-  ctx: { wait: number; priceIndex: number; priceSensitivity: number; levers: Levers },
+  /** gaveCola: 서비스 콜라를 실제로 넣었는지(재고가 없으면 못 넣음). 생략하면 수단이 켜진 대로 본다. */
+  ctx: { wait: number; priceIndex: number; priceSensitivity: number; levers: Levers; gaveCola?: boolean },
   rng: Rng,
 ): number {
   let s = SATISFACTION_BASE;
-  if (ctx.levers.premiumCheese) s += 0.4;
+  if (ctx.levers.premiumCheese) s += LEVER_SAT_BONUS.premiumCheese;
   if (ch === 'delivery') {
-    if (ctx.levers.freeCola) s += 0.3;
-    if (ctx.levers.insulatedBox) s += 0.2;
+    if (ctx.gaveCola ?? ctx.levers.freeCola) s += LEVER_SAT_BONUS.freeCola;
+    if (ctx.levers.insulatedBox) s += LEVER_SAT_BONUS.insulatedBox;
     s -= Math.max(0, (ctx.wait - 35) / 20);
   } else {
     s -= Math.max(0, (ctx.wait - 15) / 10);

@@ -106,7 +106,9 @@ export function planWeek(ns: NewsState, econ: Economy, day: number, rng: Rng, pl
   }
   if (rng.chance(WEEKLY_SHOCK_CHANCE)) {
     const type = rng.weighted(RANDOM_SHOCK_WEIGHTS);
-    if (!news.pending.some((p) => p.type === type)) {
+    // 같은 종류가 대기 중이거나 아직 진행 중이면 새로 예약하지 않는다(파동이 겹쳐 값이 폭등하지 않게).
+    const busy = news.pending.some((p) => p.type === type) || news.active.some((a) => a.type === type && a.untilDay >= day);
+    if (!busy) {
       const [lo, hi] = SHOCK_RULES[type].lead;
       news = schedule(news, type, day, day + rng.int(lo, hi), rng, place);
     }

@@ -1,5 +1,5 @@
-import { APP_ADS_DEMAND, PRICE_ELASTICITY, RECESSION_SENSITIVITY_MULT, WEATHER_DEMAND } from './balance';
-import { CYCLE_DEMAND, type Economy } from './economy';
+import { APP_ADS_DEMAND, CYCLE_MIX_TILT, CYCLE_SENSITIVITY, PRICE_ELASTICITY, WEATHER_DEMAND } from './balance';
+import { CYCLE_DEMAND, type Cycle, type Economy } from './economy';
 import type { Levers } from './levers';
 import { MENU, PIZZA_IDS, type MenuItemId, type PizzaId } from './menu';
 import type { Neighborhood } from './neighborhoods';
@@ -16,8 +16,20 @@ export function priceIndex(menuPrices: Record<MenuItemId, number>, inflation: nu
   return paid / ref;
 }
 
-export function orderMix(menuPrices: Record<MenuItemId, number>, inflation: number, priceSensitivity: number): Record<PizzaId, number> {
-  const w = PIZZA_IDS.map((id) => MENU[id].baseMix * Math.pow((MENU[id].defaultPrice * inflation) / menuPrices[id], 2 * priceSensitivity));
+/** 손님이 고르는 피자 비율. 기본가보다 비싸게 받는 메뉴는 덜 팔리고, 불황엔 비싼 메뉴부터 덜 팔린다. */
+export function orderMix(
+  menuPrices: Record<MenuItemId, number>,
+  inflation: number,
+  priceSensitivity: number,
+  cycle: Cycle = 'normal',
+): Record<PizzaId, number> {
+  const sens = priceSensitivity * CYCLE_SENSITIVITY[cycle];
+  const mean = PIZZA_IDS.reduce((s, id) => s + MENU[id].baseMix * menuPrices[id], 0);
+  const w = PIZZA_IDS.map((id) =>
+    MENU[id].baseMix *
+    Math.pow((MENU[id].defaultPrice * inflation) / menuPrices[id], 2 * sens) *
+    Math.pow(menuPrices[id] / mean, -CYCLE_MIX_TILT[cycle]),
+  );
   const total = w.reduce((s, x) => s + x, 0);
   return Object.fromEntries(PIZZA_IDS.map((id, i) => [id, w[i] / total])) as Record<PizzaId, number>;
 }
@@ -35,7 +47,7 @@ export function expectedOrders(inp: {
   const { n, economy } = inp;
   const curveSum = n.hourCurve.reduce((s, x) => s + x, 0);
   const base = (n.baseDailyOrders * n.hourCurve[inp.hour - 11]) / curveSum;
-  const sens = n.priceSensitivity * (economy.cycle === 'recession' ? RECESSION_SENSITIVITY_MULT : 1);
+  const sens = n.priceSensitivity * CYCLE_SENSITIVITY[economy.cycle];
   const common =
     CYCLE_DEMAND[economy.cycle] *
     (inp.isWeekend ? n.weekendFactor : 1) *

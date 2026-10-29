@@ -17,7 +17,7 @@ export function PauseModal({ reason, state, now, onDismiss, onGoto }: {
   reason: PauseReason;
   state: GameState;
   now: number;
-  onDismiss: () => void;
+  onDismiss: (opts?: { resume?: boolean }) => void;
   onGoto: (tab: TabId) => void;
 }) {
   let title = '';
@@ -31,7 +31,7 @@ export function PauseModal({ reason, state, now, onDismiss, onGoto }: {
     body = <p>{item?.body}</p>;
     tone = item?.tone ?? 'neutral';
     if (item?.kind === 'signal') {
-      extra = <button className="btn" onClick={() => { onGoto('inventory'); onDismiss(); }}>재고·발주 보기</button>;
+      extra = <button className="btn" onClick={() => { onGoto('inventory'); onDismiss({ resume: false }); }}>재고·발주 보기</button>;
     }
   } else if (reason.kind === 'monthEnd') {
     const months = state.ledger.months;
@@ -48,12 +48,12 @@ export function PauseModal({ reason, state, now, onDismiss, onGoto }: {
       </dl>
     );
     tone = profit >= 0 ? 'good' : 'bad';
-    extra = <button className="btn" onClick={() => { onGoto('ledger'); onDismiss(); }}>장부 보기</button>;
+    extra = <button className="btn" onClick={() => { onGoto('ledger'); onDismiss({ resume: false }); }}>장부 보기</button>;
   } else if (reason.kind === 'cashNegative') {
     title = '통장이 마이너스예요';
     body = <p>지금 쓸 돈이 바닥났어요. 재료를 너무 많이 사 두지 않았는지, 가격이 원가보다 낮지 않은지 장부를 확인해 보세요.</p>;
     tone = 'bad';
-    extra = <button className="btn" onClick={() => { onGoto('ledger'); onDismiss(); }}>장부 보기</button>;
+    extra = <button className="btn" onClick={() => { onGoto('ledger'); onDismiss({ resume: false }); }}>장부 보기</button>;
   } else {
     title = '오늘 충전된 시간을 다 썼어요';
     body = <p>내일 다시 와 주세요. 다음 1시간 영업은 약 {minutesToNextHour(state, now)}분 뒤에 충전돼요.</p>;
@@ -66,7 +66,7 @@ export function PauseModal({ reason, state, now, onDismiss, onGoto }: {
         {body}
         <div className="modal-actions">
           {extra}
-          <button className="btn primary" onClick={onDismiss}>확인</button>
+          <button className="btn primary" onClick={() => onDismiss()}>확인</button>
         </div>
       </div>
     </div>

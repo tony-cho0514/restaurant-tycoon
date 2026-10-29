@@ -227,3 +227,11 @@ button.row { cursor: pointer; min-height: 56px; }
 html, body { overscroll-behavior: none; }
 body { touch-action: manipulation; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
 .main { height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+
+/* 시작 화면 불러오기·안내, 복구 화면 */
+.import-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.notice { border-left: 6px solid var(--gold); margin-bottom: 16px; }
+.recovery { min-height: 100%; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.recovery .card { max-width: 520px; display: flex; flex-direction: column; gap: 10px; }
+.recovery h2 { margin: 0; }
+.recovery-actions { display: flex; flex-direction: column; gap: 8px; }

@@ -1,6 +1,7 @@
 // 운영 수단: 문제 앞에서 사장이 직접 골라 쓰는 수단들. 비용은 미리 정확히, 효과는 해 봐야 안다.
 import { APP_ADS_WEEKLY, APP_FEE_RATE, COLA_ATTACH_RATE, DELIVERY_FEE_OWNER, INSULATED_BOX_COST } from './balance';
 import { orderMix } from './demand';
+import type { Cycle } from './economy';
 import type { IngredientId } from './ingredients';
 import { PIZZA_IDS, clampMenuPrice, unitCost, type MenuItemId } from './menu';
 import type { Neighborhood } from './neighborhoods';
@@ -44,10 +45,12 @@ export interface MarginCtx {
   inflation: number;
   levers: Levers;
   n: Neighborhood;
+  /** 지금 경기. 생략하면 보통 경기로 계산한다. */
+  cycle?: Cycle;
 }
 
 export function orderEconomics(ctx: MarginCtx, ch: 'hall' | 'delivery') {
-  const mix = orderMix(ctx.menuPrices, ctx.inflation, ctx.n.priceSensitivity);
+  const mix = orderMix(ctx.menuPrices, ctx.inflation, ctx.n.priceSensitivity, ctx.cycle ?? 'normal');
   const opts = { premiumCheese: ctx.levers.premiumCheese };
   let revenue = COLA_ATTACH_RATE * ctx.menuPrices.cola;
   let cost = COLA_ATTACH_RATE * unitCost('cola', ctx.prices, opts);

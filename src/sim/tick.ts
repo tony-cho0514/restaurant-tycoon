@@ -102,7 +102,7 @@ function serveOrders(s: GameState, rng: Rng, anim: AnimEvents) {
   s.today.lostOrders += served.lost;
   anim.lostOrders += served.lost;
 
-  const mix = orderMix(s.menuPrices, s.economy.inflation, n.priceSensitivity);
+  const mix = orderMix(s.menuPrices, s.economy.inflation, n.priceSensitivity, s.economy.cycle);
   const mixList = PIZZA_IDS.map((id) => ({ item: id as PizzaId, weight: mix[id] }));
   const pIndex = priceIndex(s.menuPrices, s.economy.inflation);
   const stockouts = new Set<IngredientId>();
@@ -139,6 +139,7 @@ function serveOrders(s: GameState, rng: Rng, anim: AnimEvents) {
         revenue += s.menuPrices.cola;
       }
     }
+    let gaveCola = false;
     if (ch === 'delivery') {
       const appFee = revenue * APP_FEE_RATE;
       s.today.appFees += appFee;
@@ -154,6 +155,7 @@ function serveOrders(s: GameState, rng: Rng, anim: AnimEvents) {
           const r = consume(s.inventory, 'cola500', 1);
           s.inventory = r.inv;
           s.today.serviceCost += r.cost;
+          gaveCola = true;
         }
       }
       s.today.deliveryOrders += 1;
@@ -173,6 +175,7 @@ function serveOrders(s: GameState, rng: Rng, anim: AnimEvents) {
       priceIndex: pIndex,
       priceSensitivity: n.priceSensitivity,
       levers: s.levers,
+      gaveCola,
     }, rng);
     s.ratings = updateRating(s.ratings, ch, sat, s.levers);
   };
@@ -188,9 +191,11 @@ function closeDayInPlace(s: GameState, pauses: PauseReason[]) {
   s.today.labor += labor;
   s.today.utilities += UTILITIES_PER_DAY;
   s.cash -= labor + UTILITIES_PER_DAY;
-  if (s.levers.appAds && cal.dayOfWeek === 6) {
-    s.today.ads += APP_ADS_WEEKLY;
-    s.cash -= APP_ADS_WEEKLY;
+  // 배달앱 광고비는 켜 둔 날마다 하루치(주 광고비의 1/7)씩 나간다.
+  if (s.levers.appAds) {
+    const adsToday = Math.round(APP_ADS_WEEKLY / 7);
+    s.today.ads += adsToday;
+    s.cash -= adsToday;
   }
   s.today.foodCost = Math.round(s.today.foodCost);
   s.today.appFees = Math.round(s.today.appFees);

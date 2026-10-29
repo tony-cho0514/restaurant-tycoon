@@ -26,8 +26,14 @@ export const OVEN_CAP_PER_HOUR = 16;
 /** 운영 수단 없이 평범하게 장사할 때 손님 만족도의 평균. 평점은 이 값 근처로 수렴한다. */
 export const SATISFACTION_BASE = 4.4;
 
+/** 운영 수단이 손님 만족도에 더하는 값. 너무 크면 그 수단이 모든 동네에서 정답이 된다. */
+export const LEVER_SAT_BONUS = { premiumCheese: 0.2, freeCola: 0.25, insulatedBox: 0.2 };
+
 export const PRICE_ELASTICITY = 1.5;
-export const RECESSION_SENSITIVITY_MULT = 1.3;
+/** 경기별 가격 민감도 배수: 불황엔 가격에 더 민감, 호황엔 덜 민감 */
+export const CYCLE_SENSITIVITY = { boom: 0.85, normal: 1, recession: 1.3 };
+/** 경기별 메뉴 쏠림: 양수면 싼 메뉴 쪽으로(불황), 음수면 비싼 메뉴 쪽으로(호황) */
+export const CYCLE_MIX_TILT = { boom: -1, normal: 0, recession: 2 };
 
 export const VEG_SEASONAL: Record<number, number> = {
   1: 1.25, 2: 1.3, 3: 1.15, 4: 1.0, 5: 0.9, 6: 0.85, 7: 0.95, 8: 1.2, 9: 1.1, 10: 0.9, 11: 0.85, 12: 1.1,
