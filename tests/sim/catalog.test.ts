@@ -1,6 +1,8 @@
 import { ingredientPrice } from '../../src/sim/ingredients';
 import { unitCost, clampMenuPrice } from '../../src/sim/menu';
-import { NEIGHBORHOODS, cashAfterSetup } from '../../src/sim/neighborhoods';
+import { START_OPERATING_CASH } from '../../src/sim/balance';
+import { NEIGHBORHOODS } from '../../src/sim/neighborhoods';
+import { createNewGame } from '../../src/sim/newGame';
 import { basePrices } from './helpers';
 
 const base = { fx: 1350, inflation: 1, month: 4, shockMult: 1, noise: 1 };
@@ -28,7 +30,8 @@ test('가격 범위 묶기', () => {
 
 test('동네 데이터', () => {
   for (const n of Object.values(NEIGHBORHOODS)) expect(n.hourCurve).toHaveLength(11);
-  expect(cashAfterSetup(NEIGHBORHOODS.campus)).toBe(20_000_000);
-  expect(cashAfterSetup(NEIGHBORHOODS.office)).toBe(20_000_000);
-  expect(cashAfterSetup(NEIGHBORHOODS.residential)).toBe(40_000_000);
+  // 보증금·권리금은 동네마다 달라도, 다 내고 남는 운영 자금은 모두 100만 원
+  for (const id of Object.keys(NEIGHBORHOODS) as (keyof typeof NEIGHBORHOODS)[]) {
+    expect(createNewGame({ seed: 1, neighborhoodId: id, shopName: 'x', nowMs: 0 }).cash).toBe(START_OPERATING_CASH);
+  }
 });

@@ -68,7 +68,9 @@ test('단체 주문: 받으면 그 시각에 만들어 매출로, 재료가 없�
 });
 
 test('업그레이드: 오븐을 올리면 상한이 오르고 투자로 잡히며, 최대 단계 넘어선 못 산다', () => {
-  const s = g(); expect(ovenCap(s)).toBe(16);
+  // 시작 운영 자금(100만)으론 오븐을 못 사므로 돈을 모았다고 치고 본다
+  const s = { ...g(), cash: 100_000_000 }; expect(ovenCap(s)).toBe(16);
+  expect(() => buyUpgrade(g(), 'oven')).toThrow('돈');
   const u = buyUpgrade(s, 'oven');
   expect(ovenCap(u)).toBe(24); expect(u.cash).toBe(s.cash - UPGRADES.oven.costs[0]); expect(u.today.investment).toBe(UPGRADES.oven.costs[0]);
   const u2 = buyUpgrade({ ...u, cash: 1e9 }, 'oven'); expect(() => buyUpgrade(u2, 'oven')).toThrow();

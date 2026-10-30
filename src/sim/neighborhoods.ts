@@ -1,4 +1,3 @@
-import { INTERIOR_AND_EQUIPMENT, START_CAPITAL } from './balance';
 import type { PizzaId } from './menu';
 
 export type NeighborhoodId = 'campus' | 'office' | 'residential';
@@ -82,7 +81,3 @@ export const NEIGHBORHOODS: Record<NeighborhoodId, Neighborhood> = {
     listing: { deposit: 15_000_000, monthlyRent: 1_100_000, keyMoney: 15_000_000, sizePyeong: 10 },
   },
 };
-
-export function cashAfterSetup(n: Neighborhood): number {
-  return START_CAPITAL - n.listing.deposit - n.listing.keyMoney - INTERIOR_AND_EQUIPMENT;
-}

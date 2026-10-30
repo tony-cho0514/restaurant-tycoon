@@ -1,4 +1,4 @@
-import { COLA_ATTACH_RATE } from './balance';
+import { COLA_ATTACH_RATE, START_OPERATING_CASH } from './balance';
 import { NEW_GAME_CHARGE_TICKS } from './charge';
 import { initialEconomy } from './economy';
 import { INGREDIENT_IDS, ingredientPrice, type IngredientId } from './ingredients';
@@ -11,7 +11,7 @@ import { initialOwner } from './owner';
 import { initialStaff } from './staff';
 import { defaultUpgrades } from './upgrades';
 import type { NewsState } from './news';
-import { NEIGHBORHOODS, cashAfterSetup, type Neighborhood, type NeighborhoodId } from './neighborhoods';
+import { NEIGHBORHOODS, type Neighborhood, type NeighborhoodId } from './neighborhoods';
 import { Rng } from './rng';
 import { START_MONTH } from './time';
 import { DEFAULT_SETTINGS, type GameState } from './types';
@@ -60,7 +60,7 @@ export function createNewGame(o: { seed: number; neighborhoodId: NeighborhoodId;
     shopName: o.shopName,
     neighborhoodId: o.neighborhoodId,
     clock: { day: 0, hour: 11 },
-    cash: cashAfterSetup(n) - n.listing.monthlyRent - stock.spent,
+    cash: START_OPERATING_CASH,
     cashNegative: false,
     economy,
     prices,

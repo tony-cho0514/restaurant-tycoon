@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { NEIGHBORHOODS, cashAfterSetup, type NeighborhoodId } from '../../sim/neighborhoods';
+import { INTERIOR_AND_EQUIPMENT, START_OPERATING_CASH } from '../../sim/balance';
+import { NEIGHBORHOODS, type NeighborhoodId } from '../../sim/neighborhoods';
 import { SaveImportError } from '../../sim/save';
 import type { GameState } from '../../sim/types';
 import { manwon } from '../format';
@@ -69,8 +70,9 @@ export function NewGame({ onStart, onImport, notice }: {
             <dl className="facts">
               <div><dt>보증금</dt><dd>{manwon(n.listing.deposit)}</dd></div>
               <div><dt>권리금</dt><dd>{manwon(n.listing.keyMoney)}</dd></div>
+              <div><dt>인테리어·장비</dt><dd>{manwon(INTERIOR_AND_EQUIPMENT)}</dd></div>
               <div><dt>월세</dt><dd>{manwon(n.listing.monthlyRent)}</dd></div>
-              <div><dt>인테리어 후 남는 돈</dt><dd>{manwon(cashAfterSetup(n))}</dd></div>
+              <div><dt>다 내고 남는 운영 자금</dt><dd>{manwon(START_OPERATING_CASH)}</dd></div>
             </dl>
             <button className="btn primary" onClick={() => onStart({ neighborhoodId: n.id, shopName: name })}>여기서 개업</button>
           </article>

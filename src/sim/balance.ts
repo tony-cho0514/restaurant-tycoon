@@ -1,5 +1,6 @@
 // 밸런스 수치는 전부 여기 한 곳에 둔다. 밸런스 테스트가 실패하면 이 파일만 조정한다.
-export const START_CAPITAL = 100_000_000;
+/** 보증금·권리금·인테리어·첫 달 월세·첫 재료를 다 내고 통장에 남는 운영 자금(동네와 상관없이 같다). 업그레이드는 벌어서 산다. */
+export const START_OPERATING_CASH = 1_000_000;
 export const INTERIOR_AND_EQUIPMENT = 30_000_000;
 
 export const FX_BASE = 1350;
