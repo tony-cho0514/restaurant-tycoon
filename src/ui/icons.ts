@@ -14,12 +14,21 @@ export const INGREDIENT_ICON: Record<IngredientId, string> = {
   box: '📦',
   cola: '🥤',
   cola500: '🥫',
+  potato: '🥔',
+  bulgogi: '🥩',
+  sweetPotato: '🍠',
+  pineapple: '🍍',
+  ham: '🥓',
 };
 
 export const MENU_ICON: Record<MenuItemId, string> = {
   cheese: '🧀',
   pepperoni: '🍖',
   combo: '🫑',
+  potato: '🥔',
+  bulgogi: '🥩',
+  goguma: '🍠',
+  hawaiian: '🍍',
   cola: '🥤',
 };
 

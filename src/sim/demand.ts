@@ -1,9 +1,9 @@
 import {
-  APP_ADS_DEMAND, CYCLE_MIX_TILT, CYCLE_SENSITIVITY, DELIVERY_TIP_DEFAULT, DELIVERY_TIP_ELASTICITY, PRICE_ELASTICITY, WEATHER_DEMAND,
+  APP_ADS_DEMAND, CYCLE_MIX_TILT, VARIETY_BONUS_MAX, VARIETY_BONUS_PER_MENU, CYCLE_SENSITIVITY, DELIVERY_TIP_DEFAULT, DELIVERY_TIP_ELASTICITY, PRICE_ELASTICITY, WEATHER_DEMAND,
 } from './balance';
 import { CYCLE_DEMAND, type Cycle, type Economy } from './economy';
 import type { Levers } from './levers';
-import { MENU, PIZZA_IDS, type MenuItemId, type PizzaId } from './menu';
+import { MENU, PIZZA_IDS, activePizzas, type MenuActive, type MenuItemId, type PizzaId } from './menu';
 import type { Neighborhood } from './neighborhoods';
 import type { Ratings } from './ratings';
 
@@ -13,11 +13,15 @@ export function curveAt(n: Neighborhood, hour: number): number {
   return n.extraHours[hour] ?? 0;
 }
 
+export function varietyBonus(pizzaCount: number): number {
+  return Math.min(1 + VARIETY_BONUS_MAX, 1 + VARIETY_BONUS_PER_MENU * Math.max(0, pizzaCount - 3));
+}
+
 /** 피자 가격 수준: 1이면 (기본가 × 물가)와 같다. */
-export function priceIndex(menuPrices: Record<MenuItemId, number>, inflation: number): number {
+export function priceIndex(menuPrices: Record<MenuItemId, number>, inflation: number, active?: Partial<MenuActive>): number {
   let paid = 0;
   let ref = 0;
-  for (const id of PIZZA_IDS) {
+  for (const id of activePizzas(active)) {
     paid += MENU[id].baseMix * menuPrices[id];
     ref += MENU[id].baseMix * MENU[id].defaultPrice * inflation;
   }
@@ -30,16 +34,22 @@ export function orderMix(
   inflation: number,
   priceSensitivity: number,
   cycle: Cycle = 'normal',
+  active?: Partial<MenuActive>,
+  prefs: Partial<Record<PizzaId, number>> = {},
 ): Record<PizzaId, number> {
+  const ids = activePizzas(active);
   const sens = priceSensitivity * CYCLE_SENSITIVITY[cycle];
-  const mean = PIZZA_IDS.reduce((s, id) => s + MENU[id].baseMix * menuPrices[id], 0);
-  const w = PIZZA_IDS.map((id) =>
-    MENU[id].baseMix *
+  const baseSum = ids.reduce((s, id) => s + MENU[id].baseMix, 0);
+  const mean = ids.reduce((s, id) => s + MENU[id].baseMix * menuPrices[id], 0) / baseSum;
+  const w = ids.map((id) =>
+    MENU[id].baseMix * (prefs[id] ?? 1) *
     Math.pow((MENU[id].defaultPrice * inflation) / menuPrices[id], 2 * sens) *
     Math.pow(menuPrices[id] / mean, -CYCLE_MIX_TILT[cycle]),
   );
   const total = w.reduce((s, x) => s + x, 0);
-  return Object.fromEntries(PIZZA_IDS.map((id, i) => [id, w[i] / total])) as Record<PizzaId, number>;
+  const out = Object.fromEntries(PIZZA_IDS.map((id) => [id, 0])) as Record<PizzaId, number>;
+  ids.forEach((id, i) => { out[id] = w[i] / total; });
+  return out;
 }
 
 export function expectedOrders(inp: {
@@ -53,6 +63,8 @@ export function expectedOrders(inp: {
   shock: { hall: number; delivery: number };
   /** 손님이 내는 배달팁(원). 생략하면 기본값 */
   deliveryTip?: number;
+  /** 판매 중인 메뉴. 생략하면 개업 메뉴 3개 */
+  active?: Partial<MenuActive>;
 }): { hall: number; delivery: number } {
   const { n, economy } = inp;
   const curveSum = n.hourCurve.reduce((s, x) => s + x, 0);
@@ -61,7 +73,8 @@ export function expectedOrders(inp: {
   const common =
     CYCLE_DEMAND[economy.cycle] *
     (inp.isWeekend ? n.weekendFactor : 1) *
-    Math.pow(priceIndex(inp.menuPrices, economy.inflation), -PRICE_ELASTICITY * sens);
+    Math.pow(priceIndex(inp.menuPrices, economy.inflation, inp.active), -PRICE_ELASTICITY * sens) *
+    varietyBonus(activePizzas(inp.active).length);
   const weather = WEATHER_DEMAND[economy.weather];
   const hall = base * (1 - n.deliveryShare) * common * weather.hall * Math.pow(inp.ratings.hall / 4.5, 3) * inp.shock.hall;
   const delivery =

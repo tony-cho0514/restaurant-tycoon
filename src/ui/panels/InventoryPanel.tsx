@@ -9,7 +9,10 @@ import { INGREDIENT_ICON } from '../icons';
 import type { PanelProps } from './common';
 
 const DAY_STEPS = [3, 7, 14, 30, 60];
-const UNIT_STEP: Record<IngredientId, number> = { flour: 5, mozzarella: 2, tomatoSauce: 2, pepperoni: 1, veg: 1, box: 20, cola: 6, cola500: 6 };
+const UNIT_STEP: Record<IngredientId, number> = {
+  flour: 5, mozzarella: 2, tomatoSauce: 2, pepperoni: 1, veg: 1, box: 20, cola: 6, cola500: 6,
+  potato: 1, bulgogi: 1, sweetPotato: 1, pineapple: 1, ham: 1,
+};
 
 function fmtQty(id: IngredientId, qty: number): string {
   const unit = INGREDIENTS[id].unit;

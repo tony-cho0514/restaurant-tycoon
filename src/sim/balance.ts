@@ -41,6 +41,11 @@ export const SATISFACTION_BASE = 4.4;
 export const LEVER_SAT_BONUS = { premiumCheese: 0.2, freeCola: 0.25, insulatedBox: 0.2 };
 
 export const PRICE_ELASTICITY = 1.5;
+/** 새 메뉴 개발비 */
+export const MENU_DEV_COST = 300_000;
+/** 메뉴가 다양하면 손님이 조금 는다: 피자 3종 넘는 1종마다 +3%, 최대 +12% */
+export const VARIETY_BONUS_PER_MENU = 0.03;
+export const VARIETY_BONUS_MAX = 0.12;
 /** 경기별 가격 민감도 배수: 불황엔 가격에 더 민감, 호황엔 덜 민감 */
 export const CYCLE_SENSITIVITY = { boom: 0.85, normal: 1, recession: 1.3 };
 /** 경기별 메뉴 쏠림: 양수면 싼 메뉴 쪽으로(불황), 음수면 비싼 메뉴 쪽으로(호황) */

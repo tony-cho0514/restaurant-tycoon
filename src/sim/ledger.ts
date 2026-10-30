@@ -21,6 +21,8 @@ export interface DayRecord {
   deliveryFees: number;
   utilities: number;
   ads: number;
+  /** 투자: 메뉴 개발·가게 업그레이드 */
+  investment: number;
   purchases: number;
   usage: Usage;
   /** 그날 개점 시세(7일 전 대비 표시용) */
@@ -38,7 +40,7 @@ export const DAYS_KEEP = 112;
 
 const NUMERIC_KEYS = [
   'hallOrders', 'deliveryOrders', 'lostOrders', 'stockoutOrders', 'revenueHall', 'revenueDelivery', 'foodCost',
-  'serviceCost', 'wasteCost', 'labor', 'rent', 'appFees', 'cardFees', 'deliveryFees', 'utilities', 'ads', 'purchases',
+  'serviceCost', 'wasteCost', 'labor', 'rent', 'appFees', 'cardFees', 'deliveryFees', 'utilities', 'ads', 'investment', 'purchases',
 ] as const;
 
 export function emptyDay(day: number, monthIndex: number): DayRecord {
@@ -46,7 +48,7 @@ export function emptyDay(day: number, monthIndex: number): DayRecord {
     day, monthIndex,
     hallOrders: 0, deliveryOrders: 0, lostOrders: 0, stockoutOrders: 0,
     revenueHall: 0, revenueDelivery: 0,
-    foodCost: 0, serviceCost: 0, wasteCost: 0, labor: 0, rent: 0, appFees: 0, cardFees: 0, deliveryFees: 0, utilities: 0, ads: 0,
+    foodCost: 0, serviceCost: 0, wasteCost: 0, labor: 0, rent: 0, appFees: 0, cardFees: 0, deliveryFees: 0, utilities: 0, ads: 0, investment: 0,
     purchases: 0,
     usage: {},
     prices: {},
@@ -69,6 +71,6 @@ export function closeMonth(l: Ledger, monthIndex: number): Ledger {
 export function profitOf(r: DayRecord | MonthRecord): number {
   return (
     r.revenueHall + r.revenueDelivery -
-    r.foodCost - r.serviceCost - r.wasteCost - r.labor - r.rent - r.appFees - (r.cardFees ?? 0) - r.deliveryFees - r.utilities - r.ads
+    r.foodCost - r.serviceCost - r.wasteCost - r.labor - r.rent - r.appFees - (r.cardFees ?? 0) - r.deliveryFees - r.utilities - r.ads - (r.investment ?? 0)
   );
 }

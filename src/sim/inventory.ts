@@ -25,6 +25,11 @@ export const DEFAULT_RULES: Record<IngredientId, ReorderRule> = {
   box: { reorderDays: 5, targetDays: 14 },
   cola: { reorderDays: 3, targetDays: 7 },
   cola500: { reorderDays: 3, targetDays: 7 },
+  potato: { reorderDays: 2, targetDays: 5 },
+  bulgogi: { reorderDays: 1, targetDays: 3 },
+  sweetPotato: { reorderDays: 2, targetDays: 5 },
+  pineapple: { reorderDays: 3, targetDays: 10 },
+  ham: { reorderDays: 3, targetDays: 7 },
 };
 
 const EPS = 1e-9;
@@ -132,6 +137,7 @@ export function manualBuyDays(
 /** 하루 사용량이 0이어도(예: 서비스를 꺼 둔 서비스용 콜라) 창고에 둘 수 있는 최소 양 */
 export const MIN_STORAGE_UNITS: Record<IngredientId, number> = {
   flour: 10, mozzarella: 10, tomatoSauce: 5, pepperoni: 3, veg: 3, box: 100, cola: 30, cola500: 48,
+  potato: 3, bulgogi: 2, sweetPotato: 2, pineapple: 2, ham: 2,
 };
 
 /** 개수(kg·개·병)로 미리 사기. 창고 상한(capUnits)을 넘는 만큼은 잘린다. */

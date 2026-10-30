@@ -8,5 +8,5 @@ export interface PanelProps {
 }
 
 export function marginCtx(s: GameState): MarginCtx {
-  return { prices: s.prices, menuPrices: s.menuPrices, inflation: s.economy.inflation, levers: s.levers, n: NEIGHBORHOODS[s.neighborhoodId], cycle: s.economy.cycle, deliveryTip: s.settings.deliveryTip };
+  return { prices: s.prices, menuPrices: s.menuPrices, inflation: s.economy.inflation, levers: s.levers, n: NEIGHBORHOODS[s.neighborhoodId], cycle: s.economy.cycle, deliveryTip: s.settings.deliveryTip, active: s.menuActive };
 }

@@ -37,7 +37,7 @@ test('치즈 파동이 터지면 치즈 시세가 크게 오른다', () => {
 test('3년 플레이 후 저장 크기 1MB 미만', () => { const s = g(); for (let i = 0; i < 3 * 12 * 28 * 11; i++) advanceTickInPlace(s); expect(JSON.stringify(s).length).toBeLessThan(1_000_000); }, 120_000);
 
 test('현금이 0 아래로 내려갈 때 한 번 멈춘다', () => {
-  let s = g(); s.cash = 10_000; s.menuPrices = { cheese: 1000, pepperoni: 1000, combo: 1000, cola: 1000 };
+  let s = g(); s.cash = 10_000; s.menuPrices = { ...s.menuPrices, cheese: 1000, pepperoni: 1000, combo: 1000, cola: 1000 };
   let n = 0; for (let i = 0; i < 11 * 5; i++) { const r = advanceTick(s); s = r.state; n += r.pauses.filter(p => p.kind === 'cashNegative').length; }
   expect(n).toBe(1);
 });

@@ -9,7 +9,7 @@ import { rollWeather, stepEconomyWeek, type Weather } from './economy';
 import { INGREDIENT_IDS, ingredientPrice, type IngredientId } from './ingredients';
 import { autoReorder, canMake, consume, dailyUsageEstimate, expire, stockOf, type Usage } from './inventory';
 import { closeDay, closeMonth, emptyDay } from './ledger';
-import { MENU, PIZZA_IDS, type PizzaId } from './menu';
+import { MENU, activePizzas, type PizzaId } from './menu';
 import { NEIGHBORHOODS } from './neighborhoods';
 import { fallbackUsage } from './newGame';
 import { pruneOrders, type OrderRecord } from './orders';
@@ -86,9 +86,10 @@ function openDay(s: GameState, rng: Rng) {
 /** 최근 7일 사용량으로 하루 사용량을 추정한다. 콜라 서비스를 켰으면 서비스용 콜라도 배달 주문만큼 잡는다. */
 export function estimatedUsage(s: GameState): Record<IngredientId, number> {
   const n = NEIGHBORHOODS[s.neighborhoodId];
-  const fallback = fallbackUsage(n);
+  const fallback = fallbackUsage(n, s.menuActive);
   const recent = s.ledger.days.map((d) => d.usage);
-  const usage = Object.fromEntries(INGREDIENT_IDS.map((id) => [id, dailyUsageEstimate(recent, id, fallback[id])])) as Record<IngredientId, number>;
+  // 기록이 적은 새 메뉴 재료도 모자라지 않게, 기본 예상치의 60%는 늘 잡아 둔다.
+  const usage = Object.fromEntries(INGREDIENT_IDS.map((id) => [id, Math.max(dailyUsageEstimate(recent, id, fallback[id]), 0.6 * fallback[id])])) as Record<IngredientId, number>;
   if (s.levers.freeCola) usage.cola500 = Math.max(usage.cola500, n.baseDailyOrders * n.deliveryShare);
   return usage;
 }
@@ -100,14 +101,16 @@ function serveOrders(s: GameState, rng: Rng, anim: AnimEvents) {
     n, hour: s.clock.hour, isWeekend: cal.isWeekend, economy: s.economy, menuPrices: s.menuPrices,
     ratings: s.ratings, levers: s.levers, shock: demandShock(s.news.active, s.clock.day),
     deliveryTip: s.settings.deliveryTip,
+    active: s.menuActive,
   });
   const served = serveHour(rng.poisson(exp.hall), rng.poisson(exp.delivery), capacityPerHour(s.levers));
   s.today.lostOrders += served.lost;
   anim.lostOrders += served.lost;
 
-  const mix = orderMix(s.menuPrices, s.economy.inflation, n.priceSensitivity, s.economy.cycle);
-  const mixList = PIZZA_IDS.map((id) => ({ item: id as PizzaId, weight: mix[id] }));
-  const pIndex = priceIndex(s.menuPrices, s.economy.inflation);
+  const mix = orderMix(s.menuPrices, s.economy.inflation, n.priceSensitivity, s.economy.cycle, s.menuActive, n.prefs);
+  const mixList = activePizzas(s.menuActive).map((id) => ({ item: id as PizzaId, weight: mix[id] }));
+  const pIndex = priceIndex(s.menuPrices, s.economy.inflation, s.menuActive);
+  const zoneList = n.zones.map((z) => ({ item: z, weight: z.share }));
   const stockouts = new Set<IngredientId>();
 
   const serveOne = (ch: Channel) => {
@@ -145,7 +148,12 @@ function serveOrders(s: GameState, rng: Rng, anim: AnimEvents) {
       }
     }
     let gaveCola = false;
+    let zone: string | undefined;
+    let minutes: number | undefined;
     if (ch === 'delivery') {
+      const z = rng.weighted(zoneList);
+      zone = z.name;
+      minutes = Math.round(served.waitDelivery + z.extraMin);
       const appFee = revenue * APP_FEE_RATE;
       s.today.appFees += appFee;
       const ownerDelivery = DELIVERY_COST_TOTAL - s.settings.deliveryTip;
@@ -175,13 +183,13 @@ function serveOrders(s: GameState, rng: Rng, anim: AnimEvents) {
       cashOut += cardFee;
       anim.hallArrivals += 1;
     }
-    s.orders.push({ day: s.clock.day, hour: s.clock.hour, channel: ch, items, amount: revenue });
+    s.orders.push({ day: s.clock.day, hour: s.clock.hour, channel: ch, items, amount: revenue, zone, minutes });
     s.today.foodCost += food;
     s.cash += revenue - cashOut;
     anim.revenue += revenue;
     anim.pizzasBaked += 1;
     const sat = satisfaction(ch, {
-      wait: ch === 'hall' ? served.waitHall : served.waitDelivery,
+      wait: ch === 'hall' ? served.waitHall : (minutes ?? served.waitDelivery),
       priceIndex: pIndex,
       priceSensitivity: n.priceSensitivity,
       levers: s.levers,

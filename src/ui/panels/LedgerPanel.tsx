@@ -16,6 +16,7 @@ const ROWS: { key: keyof MonthRecord; label: string; sign: 1 | -1 }[] = [
   { key: 'deliveryFees', label: '배달비', sign: -1 },
   { key: 'utilities', label: '공과금', sign: -1 },
   { key: 'ads', label: '광고비', sign: -1 },
+  { key: 'investment', label: '투자(메뉴 개발·업그레이드)', sign: -1 },
 ];
 
 function monthToDate(state: PanelProps['state']): MonthRecord {

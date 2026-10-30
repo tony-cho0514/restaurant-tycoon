@@ -8,11 +8,15 @@ import type { MenuItemId } from './menu';
 import type { NeighborhoodId } from './neighborhoods';
 import type { NewsState } from './news';
 import type { OrderRecord } from './orders';
+import type { GroupOffer } from './groups';
+import type { MenuActive } from './menu';
+import type { Applicant, JobPost, Staff } from './staff';
+import type { UpgradeId } from './upgrades';
 import type { Ratings } from './ratings';
 import type { Clock } from './time';
 
 export interface GameState {
-  version: 2;
+  version: 3;
   seed: number;
   rngState: number;
   createdAt: number;
@@ -38,6 +42,20 @@ export interface GameState {
   orders: OrderRecord[];
   /** 개점 준비를 마친 마지막 날(하루에 한 번만 개점 처리) */
   openedDay: number;
+  /** 지금 파는 메뉴와 개발해 둔 메뉴 */
+  menuActive: MenuActive;
+  menuDeveloped: Partial<MenuActive>;
+  /** 알바(사장 제외), 지원자, 채용 공고 */
+  staff: Staff[];
+  applicants: Applicant[];
+  jobPost: JobPost | null;
+  /** 가게 업그레이드 단계 */
+  upgrades: Record<UpgradeId, number>;
+  /** 단체 주문: 들어온 제안과 받아 둔 주문 */
+  groupOffers: GroupOffer[];
+  groupOrders: GroupOffer[];
+  /** 직원·지원자·단체 주문 번호 */
+  nextStaffId: number;
 }
 
 export interface Settings {

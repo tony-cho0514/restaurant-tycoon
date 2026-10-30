@@ -5,7 +5,7 @@ import {
 import { orderMix } from './demand';
 import type { Cycle } from './economy';
 import type { IngredientId } from './ingredients';
-import { PIZZA_IDS, clampMenuPrice, unitCost, type MenuItemId } from './menu';
+import { PIZZA_IDS, clampMenuPrice, unitCost, type MenuActive, type MenuItemId } from './menu';
 import type { Neighborhood } from './neighborhoods';
 
 export type LeverId = 'freeCola' | 'premiumCheese' | 'insulatedBox' | 'reviewReplies' | 'appAds';
@@ -51,10 +51,12 @@ export interface MarginCtx {
   cycle?: Cycle;
   /** 손님이 내는 배달팁. 생략하면 기본값 */
   deliveryTip?: number;
+  /** 판매 중인 메뉴. 생략하면 개업 메뉴 3개 */
+  active?: Partial<MenuActive>;
 }
 
 export function orderEconomics(ctx: MarginCtx, ch: 'hall' | 'delivery') {
-  const mix = orderMix(ctx.menuPrices, ctx.inflation, ctx.n.priceSensitivity, ctx.cycle ?? 'normal');
+  const mix = orderMix(ctx.menuPrices, ctx.inflation, ctx.n.priceSensitivity, ctx.cycle ?? 'normal', ctx.active, ctx.n.prefs);
   const opts = { premiumCheese: ctx.levers.premiumCheese };
   let revenue = COLA_ATTACH_RATE * ctx.menuPrices.cola;
   let cost = COLA_ATTACH_RATE * unitCost('cola', ctx.prices, opts);

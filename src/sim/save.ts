@@ -1,6 +1,11 @@
 // 저장: 기기 안 저장소(Storage를 인자로 받음) + 직전 저장 백업 + 파일 내보내기·가져오기.
 import { CHARGE_CAP_TICKS } from './charge';
-import { INGREDIENT_IDS } from './ingredients';
+import { INGREDIENT_IDS, ingredientPrice } from './ingredients';
+import { DEFAULT_RULES } from './inventory';
+import { defaultMenuActive } from './menu';
+import { initialStaff } from './staff';
+import { calendar } from './time';
+import { defaultUpgrades } from './upgrades';
 import { LEVER_IDS } from './levers';
 import { MENU } from './menu';
 import { NEIGHBORHOODS } from './neighborhoods';
@@ -39,7 +44,7 @@ function hasGameShape(x: unknown): x is GameState {
   const inv = s.inventory as Record<string, unknown>;
   const rules = s.rules as Record<string, unknown>;
   return (
-    s.version === 2 &&
+    s.version === 3 &&
     num(s.seed) && num(s.rngState) && num(s.createdAt) && num(s.cash) &&
     typeof s.shopName === 'string' && typeof s.cashNegative === 'boolean' &&
     typeof s.neighborhoodId === 'string' && s.neighborhoodId in NEIGHBORHOODS &&
@@ -59,7 +64,9 @@ function hasGameShape(x: unknown): x is GameState {
     allNums(s.charge, ['ticks', 'lastAccruedAt']) &&
     allNums(s.settings, ['openHour', 'closeHour', 'deliveryTip']) &&
     ((s.settings as unknown as Record<string, unknown>).closedDay === null || num((s.settings as unknown as Record<string, unknown>).closedDay)) &&
-    Array.isArray(s.orders) && num(s.openedDay)
+    Array.isArray(s.orders) && num(s.openedDay) &&
+    obj(s.menuActive) && obj(s.menuDeveloped) && Array.isArray(s.staff) && Array.isArray(s.applicants) &&
+    obj(s.upgrades) && Array.isArray(s.groupOffers) && Array.isArray(s.groupOrders) && num(s.nextStaffId)
   );
 }
 
@@ -68,16 +75,52 @@ export function migrate(x: unknown): unknown {
   if (!obj(x)) return x;
   if (x.version === 1) {
     const clock = obj(x.clock) ? (x.clock as { day: number; hour: number }) : { day: 0, hour: 11 };
-    return {
+    return toV3({
       ...x,
       version: 2,
       settings: { ...DEFAULT_SETTINGS },
       orders: [],
       // 버전 1은 11시 틱에 개점 준비를 했다: 11시보다 뒤라면 그날 준비는 끝난 것
       openedDay: clock.hour > 11 ? clock.day : clock.day - 1,
-    };
+    });
   }
+  if (x.version === 2) return toV3(x);
   return x;
+}
+
+/** 버전 2 → 3: 새 메뉴·재료, 직원, 업그레이드, 단체 주문 필드를 채운다. */
+function toV3(x: Record<string, unknown>): Record<string, unknown> {
+  const econ = (x.economy ?? {}) as { fx?: number; inflation?: number; minWage?: number };
+  const clock = (x.clock ?? { day: 0, hour: 11 }) as { day: number; hour: number };
+  const prices = { ...(x.prices as Record<string, number>) };
+  for (const id of INGREDIENT_IDS) {
+    if (!num(prices[id])) {
+      prices[id] = ingredientPrice(id, { fx: econ.fx ?? 1350, inflation: econ.inflation ?? 1, month: calendar(clock).month, shockMult: 1, noise: 1 });
+    }
+  }
+  const menuPrices = { ...(x.menuPrices as Record<string, number>) };
+  for (const [id, def] of Object.entries(MENU)) if (!num(menuPrices[id])) menuPrices[id] = def.defaultPrice;
+  const inventory = { ...(x.inventory as Record<string, unknown>) };
+  for (const id of INGREDIENT_IDS) if (!Array.isArray(inventory[id])) inventory[id] = [];
+  const rules = { ...(x.rules as Record<string, unknown>) };
+  for (const id of INGREDIENT_IDS) if (!obj(rules[id])) rules[id] = { ...DEFAULT_RULES[id] };
+  return {
+    ...x,
+    version: 3,
+    prices,
+    menuPrices,
+    inventory,
+    rules,
+    menuActive: defaultMenuActive(),
+    menuDeveloped: { cheese: true, pepperoni: true, combo: true, cola: true },
+    staff: [initialStaff(econ.minWage ?? 10_030)],
+    applicants: [],
+    jobPost: null,
+    upgrades: defaultUpgrades(),
+    groupOffers: [],
+    groupOrders: [],
+    nextStaffId: 2,
+  };
 }
 
 /** 형태 확인 + 한 틱 시험 실행으로 속까지 멀쩡한지 본다. 멀쩡하면 충전값만 범위 안으로 묶어 돌려준다. */
@@ -129,7 +172,7 @@ export function quarantineCorrupt(st: StorageLike): boolean {
 }
 
 export function exportSave(s: GameState, nowMs: number): string {
-  return JSON.stringify({ app: 'restaurant-tycoon', version: 2, exportedAt: nowMs, state: s });
+  return JSON.stringify({ app: 'restaurant-tycoon', version: 3, exportedAt: nowMs, state: s });
 }
 
 export function importSave(text: string): GameState {
@@ -141,7 +184,7 @@ export function importSave(text: string): GameState {
   }
   const file = parsed as { app?: unknown; version?: unknown; state?: unknown };
   if (!file || typeof file !== 'object' || file.app !== 'restaurant-tycoon') throw new SaveImportError('이 게임의 저장 파일이 아니에요');
-  if (file.version !== 1 && file.version !== 2) throw new SaveImportError('지원하지 않는 저장 버전이에요');
+  if (file.version !== 1 && file.version !== 2 && file.version !== 3) throw new SaveImportError('지원하지 않는 저장 버전이에요');
   const state = validState(file.state);
   if (!state) throw new SaveImportError('저장 파일이 손상됐어요');
   return state;

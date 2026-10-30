@@ -4,18 +4,22 @@ import { initialEconomy } from './economy';
 import { INGREDIENT_IDS, ingredientPrice, type IngredientId } from './ingredients';
 import { DEFAULT_RULES, autoReorder, emptyInventory } from './inventory';
 import { emptyDay } from './ledger';
-import { MENU, PIZZA_IDS, type MenuItemId } from './menu';
+import { MENU, activePizzas, defaultMenuActive, type MenuActive, type MenuItemId } from './menu';
+import { initialStaff } from './staff';
+import { defaultUpgrades } from './upgrades';
 import { NEIGHBORHOODS, cashAfterSetup, type Neighborhood, type NeighborhoodId } from './neighborhoods';
 import { Rng } from './rng';
 import { START_MONTH } from './time';
 import { DEFAULT_SETTINGS, type GameState } from './types';
 
 /** 기본 주문 수로 계산한 하루 재료 사용량. 판매 기록이 쌓이기 전 발주 기준이 된다. */
-export function fallbackUsage(n: Neighborhood): Record<IngredientId, number> {
+export function fallbackUsage(n: Neighborhood, active?: Partial<MenuActive>): Record<IngredientId, number> {
   const usage = Object.fromEntries(INGREDIENT_IDS.map((id) => [id, 0])) as Record<IngredientId, number>;
-  for (const id of PIZZA_IDS) {
+  const ids = activePizzas(active);
+  const baseSum = ids.reduce((s, id) => s + MENU[id].baseMix, 0);
+  for (const id of ids) {
     for (const [ing, qty] of Object.entries(MENU[id].recipe) as [IngredientId, number][]) {
-      usage[ing] += MENU[id].baseMix * qty * n.baseDailyOrders;
+      usage[ing] += (MENU[id].baseMix / baseSum) * qty * n.baseDailyOrders;
     }
   }
   usage.cola = COLA_ATTACH_RATE * n.baseDailyOrders;
@@ -35,7 +39,7 @@ export function createNewGame(o: { seed: number; neighborhoodId: NeighborhoodId;
   today.rent = n.listing.monthlyRent;
   today.purchases = stock.spent;
   return {
-    version: 2,
+    version: 3,
     seed: o.seed,
     rngState: rng.state,
     createdAt: o.nowMs,
@@ -67,5 +71,14 @@ export function createNewGame(o: { seed: number; neighborhoodId: NeighborhoodId;
     settings: { ...DEFAULT_SETTINGS },
     orders: [],
     openedDay: -1,
+    menuActive: defaultMenuActive(),
+    menuDeveloped: { cheese: true, pepperoni: true, combo: true, cola: true },
+    staff: [initialStaff(economy.minWage)],
+    applicants: [],
+    jobPost: null,
+    upgrades: defaultUpgrades(),
+    groupOffers: [],
+    groupOrders: [],
+    nextStaffId: 2,
   };
 }

@@ -12,18 +12,18 @@ function asV1(s: GameState): Record<string, unknown> {
   return { ...rest, version: 1 };
 }
 
-test('버전 1 저장은 불러올 때 버전 2로 옮겨진다', () => {
+test('버전 1 저장은 불러올 때 최신 버전으로 옮겨진다', () => {
   const st = mem(); st.m.set(SAVE_KEY, JSON.stringify(asV1(g())));
   const s = loadGame(st)!;
-  expect(s.version).toBe(2);
+  expect(s.version).toBe(3);
   expect(s.settings).toEqual({ openHour: 11, closeHour: 22, closedDay: null, deliveryTip: 1000 });
   expect(s.orders).toEqual([]);
 });
 
 test('버전 1로 내보낸 파일도 가져온다', () => {
   const file = JSON.stringify({ app: 'restaurant-tycoon', version: 1, exportedAt: 0, state: asV1(g()) });
-  expect(importSave(file).version).toBe(2);
-  expect(importSave(exportSave(g(), 0)).version).toBe(2);
+  expect(importSave(file).version).toBe(3);
+  expect(importSave(exportSave(g(), 0)).version).toBe(3);
 });
 
 function playDay(s: GameState): { s: GameState; ticks: number } {
