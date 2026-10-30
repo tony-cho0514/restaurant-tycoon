@@ -1,4 +1,5 @@
 import type { ActiveShock } from '../../sim/news';
+import { capacityAt, staffWorking } from '../../sim/staffing';
 import { stars, won } from '../format';
 import type { PanelProps } from './common';
 
@@ -42,6 +43,18 @@ export function StatusPanel({ state }: PanelProps) {
         <div className="chips">
           {chips.map((c, i) => <span key={`${c.text}-${i}`} className={`chip tone-${c.tone}`}>{c.text}</span>)}
         </div>
+      )}
+      <h4>👥 지금 근무</h4>
+      <p className="sub">사장님{staffWorking(state, state.clock.hour).map((x) => `, ${x.name}`).join('')} · 시간당 피자 최대 {capacityAt(state, state.clock.hour)}판{(state.absentToday ?? []).length ? ` · 결근 ${(state.absentToday ?? []).length}명` : ''}</p>
+      {state.groupOrders.length > 0 && (
+        <>
+          <h4>🎉 받아 둔 단체 주문</h4>
+          <ul className="rows">
+            {state.groupOrders.map((o) => (
+              <li key={o.id} className="row"><span className="row-main"><strong>{o.title}</strong><span className="sub">{o.dueDay - state.clock.day === 0 ? '오늘' : `${o.dueDay - state.clock.day}일 뒤`} {o.dueHour}시 · 피자 {o.items.reduce((a, i) => a + i.qty, 0)}판</span></span></li>
+            ))}
+          </ul>
+        </>
       )}
       <h4>최근 7일 매출</h4>
       <Sparkline values={week} />

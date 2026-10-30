@@ -45,7 +45,7 @@ test('가게: 운영시간·휴무·배달팁을 바꾼다', () => {
 test('메뉴: 재료 보기를 누르면 들어가는 재료가 보인다', () => {
   render(<MenuPanel state={g()} update={() => {}} />);
   fireEvent.click(screen.getByRole('button', { name: '콤비네이션 피자 L 재료 보기' }));
-  expect(screen.getByText(/채소 믹스/)).toBeTruthy();
+  expect(within(screen.getByRole('list', { name: '콤비네이션 피자 L 재료' })).getByText(/채소 믹스/)).toBeTruthy();
 });
 
 test('재고: 여러 개를 골라 한 번에 발주, 서비스 콜라도 0원이 아니다', () => {

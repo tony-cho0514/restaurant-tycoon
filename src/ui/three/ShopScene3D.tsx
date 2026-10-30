@@ -3,9 +3,11 @@ import type { AnimEvents } from '../../sim/tick';
 import { ShopEngine } from './engine';
 
 /** 3D 미니어처 가게. 손가락으로 끌면 돌려 보고, 두 손가락으로 확대할 수 있다. */
-export default function ShopScene3D({ anim, hour, still, onFail }: {
+export default function ShopScene3D({ anim, hour, still, onFail, tables = 4, staff = 2 }: {
   anim: AnimEvents | null;
   hour: number;
+  tables?: number;
+  staff?: number;
   still: boolean;
   onFail: () => void;
 }) {
@@ -23,7 +25,7 @@ export default function ShopScene3D({ anim, hour, still, onFail }: {
     }
     engine.current = e;
     e.setHour(hour);
-    e.load().then(() => setLoading(false)).catch(() => onFail());
+    e.load().then(() => { e.setTables(tables); e.setStaff(staff); setLoading(false); }).catch(() => onFail());
     return () => {
       e.dispose();
       engine.current = null;
@@ -39,6 +41,14 @@ export default function ShopScene3D({ anim, hour, still, onFail }: {
   useEffect(() => {
     engine.current?.setHour(hour);
   }, [hour]);
+
+  useEffect(() => {
+    engine.current?.setTables(tables);
+  }, [tables]);
+
+  useEffect(() => {
+    engine.current?.setStaff(staff);
+  }, [staff]);
 
   return (
     <div className="scene3d" ref={ref}>

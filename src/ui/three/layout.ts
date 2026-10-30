@@ -83,16 +83,16 @@ export const SEATS: { x: number; z: number; rotY: number }[] = TABLES.flatMap((t
   { x: t.x + 0.18, z: t.z + 0.43, rotY: 180 },
 ]);
 
-const dining: Prop[] = [
-  { model: F('rugRectangle'), x: 5.6, z: 3.35, scale: 3.2 },
-  ...TABLES.map((t) => ({ model: F('tableCloth'), x: t.x, z: t.z })),
-  ...SEATS.map((s) => ({ model: F('chairCushion'), x: s.x, z: s.z, rotY: s.rotY })),
-  ...TABLES.flatMap((t, i) => [
-    { model: FOOD('plate'), x: t.x - 0.18, z: t.z - 0.1, y: 0.33, scale: 0.25 },
-    { model: FOOD('plate'), x: t.x + 0.18, z: t.z + 0.1, y: 0.33, scale: 0.25 },
-    { model: FOOD(i % 2 ? 'soda-can' : 'glass'), x: t.x + 0.05, z: t.z - 0.05, y: 0.33, scale: 0.3 },
-  ]),
-];
+const dining: Prop[] = [{ model: F('rugRectangle'), x: 5.6, z: 3.35, scale: 3.2 }];
+
+/** 식탁 하나 = 식탁 + 의자 2개 + 접시·컵. 업그레이드한 만큼 앞에서부터 보인다. */
+export const TABLE_GROUPS: Prop[][] = TABLES.map((t, i) => [
+  { model: F('tableCloth'), x: t.x, z: t.z },
+  ...SEATS.slice(i * 2, i * 2 + 2).map((s) => ({ model: F('chairCushion'), x: s.x, z: s.z, rotY: s.rotY })),
+  { model: FOOD('plate'), x: t.x - 0.18, z: t.z - 0.1, y: 0.33, scale: 0.25 },
+  { model: FOOD('plate'), x: t.x + 0.18, z: t.z + 0.1, y: 0.33, scale: 0.25 },
+  { model: FOOD(i % 2 ? 'soda-can' : 'glass'), x: t.x + 0.05, z: t.z - 0.05, y: 0.33, scale: 0.3 },
+]);
 
 const decor: Prop[] = [
   { model: F('pottedPlant'), x: 3.7, z: 0.35 },
@@ -120,6 +120,7 @@ export const CHARACTERS = [
 export const STAFF = [
   { model: 'characters/character-male-c', x: 0.95, z: 1.2 },
   { model: 'characters/character-female-d', x: 1.95, z: 1.2 },
+  { model: 'characters/character-male-b', x: 2.6, z: 1.2 },
 ];
 
 /** 손님이 들어오는 길: 가게 밖(오른쪽 앞) → 입구 → 카운터 앞 */

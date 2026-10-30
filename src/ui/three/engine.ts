@@ -5,7 +5,7 @@ import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { AnimEvents } from '../../sim/tick';
 import {
-  CHARACTERS, COUNTER_FRONT, ENTRY_PATH, PIZZA_SLOTS, ROOM, SEATS, STAFF, STATIC_PROPS, VAN, modelPath, type Prop,
+  CHARACTERS, COUNTER_FRONT, ENTRY_PATH, PIZZA_SLOTS, ROOM, SEATS, STAFF, STATIC_PROPS, TABLE_GROUPS, VAN, modelPath, type Prop,
 } from './layout';
 
 const DEG = Math.PI / 180;
@@ -90,6 +90,9 @@ export class ShopEngine {
   private lamps: THREE.PointLight[] = [];
   private customers: Walker[] = [];
   private staff: Walker[] = [];
+  private tableGroups: THREE.Group[] = [];
+  private tableLimit = TABLE_GROUPS.length;
+  private staffLimit = STAFF.length;
   private pizzas: { obj: THREE.Object3D; t: number; slot: number }[] = [];
   private van: THREE.Object3D | null = null;
   private vanTrip: { phase: 'leave' | 'return'; t: number } | null = null;
@@ -179,7 +182,7 @@ export class ShopEngine {
 
   async load(): Promise<void> {
     const names = new Set<string>([
-      'furniture/floorFull', ...STATIC_PROPS.map((p) => p.model), ...CHARACTERS, ...STAFF.map((s) => s.model),
+      'furniture/floorFull', ...STATIC_PROPS.map((p) => p.model), ...TABLE_GROUPS.flat().map((p) => p.model), ...CHARACTERS, ...STAFF.map((s) => s.model),
       'food/pizza', 'car/delivery',
     ]);
     const loaded = new Map<string, GLTF>();
@@ -217,6 +220,19 @@ export class ShopEngine {
       this.scene.add(obj);
     }
 
+    for (const group of TABLE_GROUPS) {
+      const g = new THREE.Group();
+      for (const p of group) {
+        const obj = loaded.get(p.model)!.scene.clone();
+        place(obj, p);
+        enableShadows(obj);
+        g.add(obj);
+      }
+      this.scene.add(g);
+      this.tableGroups.push(g);
+    }
+    this.applyTables();
+
     for (const s of STAFF) {
       const w = makeWalker(loaded.get(s.model)!);
       place(w.root, { model: '', x: s.x, z: s.z });
@@ -224,6 +240,7 @@ export class ShopEngine {
       this.scene.add(w.root);
       this.staff.push(w);
     }
+    this.setStaff(this.staffLimit);
 
     for (const name of CHARACTERS) {
       const w = makeWalker(loaded.get(name)!);
@@ -250,6 +267,22 @@ export class ShopEngine {
     this.ready = true;
   }
 
+  /** 식탁 업그레이드 단계만큼 식탁을 보인다. */
+  setTables(n: number) {
+    this.tableLimit = Math.max(1, Math.min(TABLE_GROUPS.length, n));
+    this.applyTables();
+  }
+
+  private applyTables() {
+    this.tableGroups.forEach((g, i) => { g.visible = i < this.tableLimit; });
+  }
+
+  /** 카운터 뒤에 보일 사람 수(사장님 + 근무 중 알바, 최대 3) */
+  setStaff(n: number) {
+    this.staffLimit = Math.max(1, Math.min(STAFF.length, n));
+    this.staff.forEach((w, i) => { w.root.visible = i < this.staffLimit; });
+  }
+
   /** 시간대별 빛: 낮은 밝게, 저녁은 노을빛, 밤은 파랗게 어둡고 가게 조명이 켜진다. */
   setHour(hour: number) {
     const night = hour >= 19;
@@ -271,7 +304,7 @@ export class ShopEngine {
 
   private spawnCustomer(delay: number) {
     const w = this.customers.find((c) => !c.busy);
-    const seat = SEATS.findIndex((_, i) => !this.seatsTaken.has(i));
+    const seat = SEATS.findIndex((_, i) => i < this.tableLimit * 2 && !this.seatsTaken.has(i));
     if (!w || seat < 0) return;
     w.busy = true;
     w.seat = seat;

@@ -41,7 +41,9 @@ function path(from: { x: number; y: number }, to: { x: number; y: number }): CSS
   return { '--fx': `${from.x}%`, '--fy': `${from.y}%`, '--tx': `${to.x}%`, '--ty': `${to.y}%` } as CSSProperties;
 }
 
-export function ShopScene({ anim, hour, weather, mood }: { anim: AnimEvents | null; hour: number; weather: Weather; mood: Mood }) {
+export function ShopScene({ anim, hour, weather, mood, tables, staff }: {
+  anim: AnimEvents | null; hour: number; weather: Weather; mood: Mood; tables?: number; staff?: number;
+}) {
   const [sprites, setSprites] = useState<Sprite[]>([]);
   const [floats, setFloats] = useState<Float[]>([]);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -92,7 +94,7 @@ export function ShopScene({ anim, hour, weather, mood }: { anim: AnimEvents | nu
     <div className={`scene mood-${mood}`} style={SCENE_ASSETS.background ? { backgroundImage: `url(${SCENE_ASSETS.background})` } : undefined}>
       {mode === '3d' && (
         <Suspense fallback={<div className="scene3d-loading">🍕 가게를 꾸미는 중…</div>}>
-          <ShopScene3D anim={anim} hour={hour} still={still} onFail={() => setMode('2d')} />
+          <ShopScene3D anim={anim} hour={hour} still={still} tables={tables} staff={staff} onFail={() => setMode('2d')} />
         </Suspense>
       )}
       {mode === '2d' && !SCENE_ASSETS.background && (

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { MENU } from '../../sim/menu';
-import { hourlyRevenue, ordersOn, type OrderRecord } from '../../sim/orders';
+import { hourlyRevenue, ordersOn, zoneStats, type OrderRecord } from '../../sim/orders';
+import { NEIGHBORHOODS } from '../../sim/neighborhoods';
 import { formatClock } from '../../sim/time';
 import { won } from '../format';
 import type { PanelProps } from './common';
@@ -84,6 +85,16 @@ export function SalesPanel({ state }: PanelProps) {
         </tbody>
       </table>
 
+      <h4>🛵 배달 구역 <span className="sub">(최근 7일)</span></h4>
+      <table className="ledger" aria-label="배달 구역">
+        <thead><tr><th>구역</th><th>주문</th><th>매출</th><th>평균 배달</th></tr></thead>
+        <tbody>
+          {zoneStats(state.orders, NEIGHBORHOODS[state.neighborhoodId]).map((z) => (
+            <tr key={z.id}><th>{z.name}</th><td>{z.count}건</td><td>{won(z.amount)}</td><td>{z.count ? `${Math.round(z.avgMinutes)}분` : '—'}</td></tr>
+          ))}
+        </tbody>
+      </table>
+
       <div className="panel-head">
         <h4>주문 목록</h4>
         <div className="day-picker" role="group" aria-label="주문 종류">
@@ -97,7 +108,7 @@ export function SalesPanel({ state }: PanelProps) {
           <li key={i} className={`order ch-${o.channel}`}>
             <span className="order-time">{o.hour}시</span>
             <span className="order-ch">{CHANNEL_LABEL[o.channel]}</span>
-            <span className="order-items">{itemsText(o)}{o.zone ? ` · ${o.zone}` : ''}</span>
+            <span className="order-items">{itemsText(o)}{o.zone ? ` · ${o.zone}${o.minutes ? ` ${o.minutes}분` : ''}` : ''}</span>
             <strong className="order-amount">{won(o.amount)}</strong>
           </li>
         ))}

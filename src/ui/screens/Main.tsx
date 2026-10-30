@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react';
+import { acceptGroup, declineGroup } from '../../sim/groupOrders';
+import { staffWorking } from '../../sim/staffing';
+import { tableCount } from '../../sim/upgradeOps';
 import type { GameState } from '../../sim/types';
 import { PauseModal, type TabId } from '../components/PauseModal';
 import { PlaybackBar } from '../components/PlaybackBar';
@@ -75,6 +78,8 @@ export function Main({ initial, now = Date.now, persist, saveFailed = false, onR
           hour={pb.lastAnim?.hour ?? pb.state.clock.hour}
           weather={pb.state.economy.weather}
           mood={moodOf(pb.state.news.active.filter((a) => a.untilDay >= pb.state.clock.day), pb.state.economy.cycle)}
+          tables={tableCount(pb.state)}
+          staff={1 + staffWorking(pb.state, pb.state.clock.hour).length}
         />
         <PlaybackBar
           state={pb.state}
@@ -97,7 +102,15 @@ export function Main({ initial, now = Date.now, persist, saveFailed = false, onR
         </div>
       </section>
       {pb.pauses[0] && (
-        <PauseModal reason={pb.pauses[0]} state={pb.state} now={clockNow} onDismiss={pb.dismissPause} onGoto={setTab} />
+        <PauseModal
+          reason={pb.pauses[0]}
+          state={pb.state}
+          now={clockNow}
+          onDismiss={pb.dismissPause}
+          onGoto={setTab}
+          onAccept={(id) => pb.update((s) => acceptGroup(s, id))}
+          onDecline={(id) => pb.update((s) => declineGroup(s, id))}
+        />
       )}
     </main>
   );

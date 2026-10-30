@@ -1,6 +1,7 @@
 import { DELIVERY_COST_TOTAL, UTILITIES_PER_HOUR } from '../../sim/balance';
 import { dailyLabor } from '../../sim/labor';
 import type { Settings } from '../../sim/types';
+import { MAX_GRADE, UPGRADES, UPGRADE_IDS, buyUpgrade, shopGrade, upgradeCost } from '../../sim/upgradeOps';
 import { won } from '../format';
 import type { PanelProps } from './common';
 
@@ -58,7 +59,42 @@ export function ShopPanel({ state, update }: PanelProps) {
       <p className="sub">배달 한 건 비용 {won(DELIVERY_COST_TOTAL)} 중 사장 부담 {won(DELIVERY_COST_TOTAL - st.deliveryTip)}. 손님 몫을 올리면 배달 주문이 줄어요.</p>
 
       <h4>🛠️ 업그레이드</h4>
-      <p className="sub">식탁·오븐·창고·인테리어·간판·배달 오토바이 업그레이드는 다음 업데이트에서 열려요.</p>
+      <div className="grade">
+        <span>가게 등급 {shopGrade(state)} / {MAX_GRADE} · 2호점 준비도</span>
+        <div className="bar" role="progressbar" aria-valuenow={shopGrade(state)} aria-valuemin={0} aria-valuemax={MAX_GRADE}>
+          <div style={{ width: `${(shopGrade(state) / MAX_GRADE) * 100}%` }} />
+        </div>
+      </div>
+      <ul className="rows">
+        {UPGRADE_IDS.map((id) => {
+          const def = UPGRADES[id];
+          const level = state.upgrades[id];
+          const cost = upgradeCost(state, id);
+          return (
+            <li key={id} className="row">
+              <span className="row-icon" aria-hidden="true">{def.icon}</span>
+              <div className="row-main">
+                <strong>{def.name} <span className="sub">{level}/{def.max}단계</span></strong>
+                <span className="sub">지금: {def.effect(level)}</span>
+                {cost !== null && <span className="sub">다음: {def.effect(level + 1)}</span>}
+              </div>
+              {cost === null ? (
+                <span className="badge on">최고</span>
+              ) : (
+                <button
+                  className="btn primary"
+                  aria-label={`${def.name} 업그레이드`}
+                  disabled={state.cash < cost}
+                  onClick={() => update((s) => buyUpgrade(s, id))}
+                >
+                  {won(cost)}
+                </button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      <p className="sub">업그레이드 비용은 장부의 「투자」로 잡혀서 그달 이익이 줄어 보여요. 길게 보고 정하세요.</p>
     </div>
   );
 }

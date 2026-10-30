@@ -4,6 +4,12 @@ import type { PauseReason } from '../../sim/tick';
 import type { GameState } from '../../sim/types';
 import { won } from '../format';
 import { newsIcon } from '../icons';
+import { MENU } from '../../sim/menu';
+
+function dayText(day: number, today: number): string {
+  const d = day - today;
+  return d === 0 ? '오늘' : d === 1 ? '내일' : d === 2 ? '모레' : `${d}일 뒤`;
+}
 
 export type TabId = 'status' | 'sales' | 'menu' | 'inventory' | 'staff' | 'shop' | 'levers' | 'ledger' | 'news';
 
@@ -14,12 +20,14 @@ function minutesToNextHour(state: GameState, now: number): number {
   return Math.max(1, Math.ceil(((1 - (ticks % 1)) * MS_PER_CHARGE_TICK) / 60_000));
 }
 
-export function PauseModal({ reason, state, now, onDismiss, onGoto }: {
+export function PauseModal({ reason, state, now, onDismiss, onGoto, onAccept = () => {}, onDecline = () => {} }: {
   reason: PauseReason;
   state: GameState;
   now: number;
   onDismiss: (opts?: { resume?: boolean }) => void;
   onGoto: (tab: TabId) => void;
+  onAccept?: (offerId: number) => void;
+  onDecline?: (offerId: number) => void;
 }) {
   let title = '';
   let body: React.ReactNode = null;
@@ -35,6 +43,29 @@ export function PauseModal({ reason, state, now, onDismiss, onGoto }: {
     tone = item?.tone ?? 'neutral';
     if (item?.kind === 'signal') {
       extra = <button className="btn" onClick={() => { onGoto('inventory'); onDismiss({ resume: false }); }}>재고·발주 보기</button>;
+    }
+  } else if (reason.kind === 'groupOffer') {
+    const o = state.groupOffers.find((x) => x.id === reason.offerId);
+    icon = '🎉';
+    tone = 'good';
+    title = o ? `단체 주문 요청: ${o.title}` : '단체 주문 요청';
+    if (o) {
+      const total = o.items.reduce((a, i) => a + i.qty, 0);
+      const amount = Math.round(o.items.reduce((a, i) => a + i.qty * state.menuPrices[i.menu], 0) * (1 - o.discount));
+      body = (
+        <dl className="facts">
+          <div><dt>언제</dt><dd>{dayText(o.dueDay, state.clock.day)} {o.dueHour}시</dd></div>
+          <div><dt>무엇을</dt><dd>{o.items.map((i) => `${MENU[i.menu].name} ${i.qty}판`).join(', ')}</dd></div>
+          <div><dt>할인 요청</dt><dd>{Math.round(o.discount * 100)}%</dd></div>
+          <div><dt>받을 돈</dt><dd>{won(amount)} ({total}판)</dd></div>
+        </dl>
+      );
+      extra = (
+        <>
+          <button className="btn" onClick={() => { onDecline(o.id); onDismiss({ resume: false }); }}>거절</button>
+          <button className="btn primary" onClick={() => { onAccept(o.id); onDismiss(); }}>받기</button>
+        </>
+      );
     }
   } else if (reason.kind === 'monthEnd') {
     const months = state.ledger.months;
@@ -73,7 +104,7 @@ export function PauseModal({ reason, state, now, onDismiss, onGoto }: {
         {body}
         <div className="modal-actions">
           {extra}
-          <button className="btn primary" onClick={() => onDismiss()}>확인</button>
+          {reason.kind !== 'groupOffer' && <button className="btn primary" onClick={() => onDismiss()}>확인</button>}
         </div>
       </div>
     </div>
