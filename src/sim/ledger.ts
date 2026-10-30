@@ -26,6 +26,8 @@ export interface DayRecord {
   /** 투자: 메뉴 개발·가게 업그레이드 */
   investment: number;
   purchases: number;
+  /** 사장님 개인 지출(휴가 등): 통장에서 나가지만 가게 이익엔 안 잡힘 */
+  ownerDraw: number;
   usage: Usage;
   /** 그날 개점 시세(7일 전 대비 표시용) */
   prices: Partial<Record<IngredientId, number>>;
@@ -42,7 +44,7 @@ export const DAYS_KEEP = 112;
 
 export const NUMERIC_KEYS = [
   'hallOrders', 'deliveryOrders', 'groupOrders', 'lostOrders', 'stockoutOrders', 'revenueHall', 'revenueDelivery', 'foodCost',
-  'serviceCost', 'wasteCost', 'labor', 'rent', 'appFees', 'cardFees', 'deliveryFees', 'utilities', 'ads', 'investment', 'purchases',
+  'serviceCost', 'wasteCost', 'labor', 'rent', 'appFees', 'cardFees', 'deliveryFees', 'utilities', 'ads', 'investment', 'purchases', 'ownerDraw',
 ] as const;
 
 export function emptyDay(day: number, monthIndex: number): DayRecord {
@@ -52,6 +54,7 @@ export function emptyDay(day: number, monthIndex: number): DayRecord {
     revenueHall: 0, revenueDelivery: 0,
     foodCost: 0, serviceCost: 0, wasteCost: 0, labor: 0, rent: 0, appFees: 0, cardFees: 0, deliveryFees: 0, utilities: 0, ads: 0, investment: 0,
     purchases: 0,
+    ownerDraw: 0,
     usage: {},
     prices: {},
   };

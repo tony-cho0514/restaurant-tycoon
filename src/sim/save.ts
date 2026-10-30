@@ -10,6 +10,7 @@ import { defaultUpgrades } from './upgrades';
 import { LEVER_IDS } from './levers';
 import { MENU } from './menu';
 import { NEIGHBORHOODS } from './neighborhoods';
+import { initialOwner } from './owner';
 import { advanceTickInPlace } from './tick';
 import { DEFAULT_SETTINGS, type GameState } from './types';
 
@@ -67,7 +68,8 @@ function hasGameShape(x: unknown): x is GameState {
     ((s.settings as unknown as Record<string, unknown>).closedDay === null || num((s.settings as unknown as Record<string, unknown>).closedDay)) &&
     Array.isArray(s.orders) && num(s.openedDay) &&
     obj(s.menuActive) && obj(s.menuDeveloped) && Array.isArray(s.staff) && Array.isArray(s.applicants) &&
-    obj(s.upgrades) && Array.isArray(s.groupOffers) && Array.isArray(s.groupOrders) && num(s.nextStaffId)
+    obj(s.upgrades) && Array.isArray(s.groupOffers) && Array.isArray(s.groupOrders) && num(s.nextStaffId) &&
+    allNums(s.owner, ['stress', 'daysWithoutRest', 'awayFrom', 'awayUntil']) && Array.isArray((s.owner as Record<string, unknown>).log)
   );
 }
 
@@ -92,17 +94,24 @@ export function migrate(x: unknown): unknown {
   if (!obj(x)) return x;
   if (x.version === 1) {
     const clock = obj(x.clock) ? (x.clock as { day: number; hour: number }) : { day: 0, hour: 11 };
-    return toV3({
+    return withOwner(toV3({
       ...x,
       version: 2,
       settings: { ...DEFAULT_SETTINGS },
       orders: [],
       // 버전 1은 11시 틱에 개점 준비를 했다: 11시보다 뒤라면 그날 준비는 끝난 것
       openedDay: clock.hour > 11 ? clock.day : clock.day - 1,
-    });
+    }));
   }
-  if (x.version === 2) return toV3(x);
-  return x;
+  if (x.version === 2) return withOwner(toV3(x));
+  return withOwner(x);
+}
+
+/** 사장님 스트레스가 생기기 전 저장: 기본 사장님을 채운다(버전은 그대로 3). */
+function withOwner(x: Record<string, unknown>): Record<string, unknown> {
+  if (obj(x.owner)) return x;
+  const ratings = allNums(x.ratings, ['hall', 'delivery']) ? (x.ratings as { hall: number; delivery: number }) : { hall: 4.5, delivery: 4.5 };
+  return { ...x, owner: initialOwner(ratings) };
 }
 
 /** 버전 2 → 3: 새 메뉴·재료, 직원, 업그레이드, 단체 주문 필드를 채운다. */

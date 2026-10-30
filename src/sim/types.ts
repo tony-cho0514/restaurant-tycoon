@@ -7,6 +7,7 @@ import type { Levers } from './levers';
 import type { MenuItemId } from './menu';
 import type { NeighborhoodId } from './neighborhoods';
 import type { NewsState } from './news';
+import type { OwnerState } from './owner';
 import type { OrderRecord } from './orders';
 import type { GroupOffer } from './groups';
 import type { MenuActive } from './menu';
@@ -58,6 +59,8 @@ export interface GameState {
   nextStaffId: number;
   /** 오늘 결근한 직원 id */
   absentToday?: number[];
+  /** 사장님: 스트레스·쉬는 날 */
+  owner: OwnerState;
 }
 
 export interface Settings {

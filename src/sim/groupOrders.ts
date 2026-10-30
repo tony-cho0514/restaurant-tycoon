@@ -1,11 +1,12 @@
 // 단체 주문: 동네마다 성격이 다른 큰 주문. 개점 때 제안이 오고, 받으면 약속 한 시간 전부터 미리 만들어 약속 시각에 보낸다.
-import { DELIVERY_COST_TOTAL, MISC_COST_PER_PIZZA, PREMIUM_CHEESE_MULT } from './balance';
+import { DELIVERY_COST_TOTAL, MISC_COST_PER_PIZZA, PREMIUM_CHEESE_MULT, STRESS_EVENT } from './balance';
 import type { GroupOffer } from './groups';
 import { canMake, consume, type Inventory } from './inventory';
 import type { IngredientId } from './ingredients';
 import { MENU, activePizzas, type PizzaId } from './menu';
 import type { NeighborhoodId } from './neighborhoods';
 import { pushNews } from './news';
+import { addStress } from './owner';
 import type { Rng } from './rng';
 import { capacityAt } from './staffing';
 import { calendar } from './time';
@@ -23,9 +24,9 @@ const GROUP_RATING_DOWN = 0.2;
 const GROUP_SHARE = 0.6;
 const MIN_GROUP = 5;
 
-/** 이 제안을 그 시각까지 만들 수 있는 최대 판 수(한 시간 전 + 약속 시각, 결근 없다고 보고)와 지금 재고로 만들 수 있는 판 수 */
-export function groupFeasible(s: GameState, o: Pick<GroupOffer, 'dueHour' | 'items'>): { maxPizzas: number; stockPizzas: number } {
-  const full = { ...s, absentToday: [] };
+/** 이 제안을 그 시각까지 만들 수 있는 최대 판 수(한 시간 전 + 약속 시각, 결근 없다고 보고, 사장님이 쉬기로 한 날이면 알바만)와 지금 재고로 만들 수 있는 판 수 */
+export function groupFeasible(s: GameState, o: Pick<GroupOffer, 'dueHour' | 'items'> & { dueDay?: number }): { maxPizzas: number; stockPizzas: number } {
+  const full = { ...s, absentToday: [], clock: { day: o.dueDay ?? s.clock.day, hour: o.dueHour } };
   const prepHour = Math.max(s.settings.openHour, o.dueHour - 1);
   const maxPizzas =
     (prepHour < o.dueHour ? Math.floor(capacityAt(full, prepHour) * GROUP_SHARE) : 0) +
@@ -59,7 +60,7 @@ export function morningGroupOffers(s: GameState, rng: Rng): { state: GameState; 
   const first = rng.pick(pizzas);
   const second = pizzas.length > 1 ? rng.pick(pizzas.filter((p) => p !== first)) : null;
   const wanted = rng.int(t.qty[0], t.qty[1]);
-  const { maxPizzas } = groupFeasible(state, { dueHour, items: [] });
+  const { maxPizzas } = groupFeasible(state, { dueDay, dueHour, items: [] });
   const total = Math.min(wanted, maxPizzas);
   if (total < MIN_GROUP) return { state, newOffers: [] };
   const firstQty = second ? Math.ceil(total * 0.6) : total;
@@ -160,6 +161,7 @@ function settleGroup(s: GameState, o: GroupOffer) {
     s.orders.push({ day: s.clock.day, hour: s.clock.hour, channel: 'group', items: made.filter((i) => i.qty > 0), amount });
   }
   const success = ok === need;
+  addStress(s, success ? '단체 주문 성공' : '단체 주문 실패', success ? STRESS_EVENT.groupSuccess : STRESS_EVENT.groupFail);
   s.ratings = { ...s.ratings, delivery: Math.min(5, Math.max(1, s.ratings.delivery + (success ? GROUP_RATING_UP : -GROUP_RATING_DOWN))) };
   s.news = pushNews(s.news, {
     day: s.clock.day, kind: 'announce', important: !success, tone: success ? 'good' : 'bad',
@@ -172,6 +174,7 @@ function settleGroup(s: GameState, o: GroupOffer) {
 export function failMissedGroups(s: GameState): void {
   const missed = s.groupOrders.filter((o) => o.dueDay <= s.clock.day);
   for (const o of missed) {
+    addStress(s, '단체 주문 실패', STRESS_EVENT.groupFail);
     s.ratings = { ...s.ratings, delivery: Math.max(1, s.ratings.delivery - GROUP_RATING_DOWN) };
     s.news = pushNews(s.news, {
       day: s.clock.day, kind: 'announce', important: true, tone: 'bad',

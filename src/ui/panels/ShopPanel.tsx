@@ -1,7 +1,8 @@
-import { DELIVERY_COST_TOTAL, UTILITIES_PER_HOUR } from '../../sim/balance';
+import { DELIVERY_COST_TOTAL, STRESS_REST_DAY, STRESS_REST_HOUR, UTILITIES_PER_HOUR } from '../../sim/balance';
 import { dailyLabor } from '../../sim/labor';
-import { shiftHours } from '../../sim/staffing';
-import type { Settings } from '../../sim/types';
+import { AWAY_LABEL, VACATION_COST, VACATION_DAYS, leaveEarly, ownerAway, ownerWorking, takeDayOff, takeVacation } from '../../sim/owner';
+import { shiftHours, staffWorking } from '../../sim/staffing';
+import type { GameState, Settings } from '../../sim/types';
 import { MAX_GRADE, UPGRADES, UPGRADE_IDS, buyUpgrade, shopGrade, upgradeCost } from '../../sim/upgradeOps';
 import { won } from '../format';
 import type { PanelProps } from './common';
@@ -9,6 +10,70 @@ import type { PanelProps } from './common';
 const DAY_NAMES = ['월', '화', '수', '목', '금', '토', '일'];
 const OPEN_RANGE = [10, 12];
 const CLOSE_RANGE = [20, 24];
+
+function can(f: () => unknown): boolean {
+  try {
+    f();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** 사장님 휴식: 일찍 퇴근, 내일 하루 쉬기, 휴가. 무엇을 잃고 얼마나 쉬는지 미리 보여 준다. */
+function RestSection({ state, update }: PanelProps) {
+  const st = state.settings;
+  const from = Math.max(state.clock.hour, st.openHour);
+  const left = Math.max(0, st.closeHour - from);
+  let covered = 0;
+  for (let h = from; h < st.closeHour; h++) if (staffWorking(state, h).length > 0) covered++;
+  // 내일은 결근을 모르니 근무 시간대로만 센다
+  const tomorrow = { ...state, absentToday: [] } as GameState;
+  let tomorrowCovered = 0;
+  for (let h = st.openHour; h < st.closeHour; h++) if (staffWorking(tomorrow, h).length > 0) tomorrowCovered++;
+  const hours = st.closeHour - st.openHour;
+  const o = state.owner;
+  const scheduled = o.awayUntil >= state.clock.day && o.awayReason
+    ? `${o.awayFrom <= state.clock.day ? '지금' : o.awayFrom - state.clock.day === 1 ? '내일부터' : `${o.awayFrom - state.clock.day}일 뒤부터`} ${AWAY_LABEL[o.awayReason]}${o.awayUntil > o.awayFrom ? `(${o.awayUntil - o.awayFrom + 1}일)` : ''}`
+    : null;
+  const shopText = (n: number, total: number) => (n === 0 ? '알바가 없어 가게 문을 닫아요' : n >= total ? '알바가 가게를 봐요' : `알바 있는 ${n}시간만 열고 나머지는 닫아요`);
+
+  return (
+    <>
+      <h4>🛋️ 사장님 휴식</h4>
+      {scheduled && <p className="sub"><b>{scheduled}</b> 예정이에요.</p>}
+      <ul className="rows rest-actions">
+        <li className="row">
+          <span className="row-icon" aria-hidden="true">🏃</span>
+          <div className="row-main">
+            <strong>오늘 일찍 퇴근</strong>
+            <span className="sub">
+              {ownerAway(state) ? '오늘은 쉬는 날이에요' : !ownerWorking(state, from) ? '이미 퇴근했어요' : `남은 ${left}시간: ${shopText(covered, left)} · 스트레스 약 −${Math.round(left * STRESS_REST_HOUR)}`}
+            </span>
+          </div>
+          <button className="btn" disabled={!can(() => leaveEarly(state))} onClick={() => update(leaveEarly)}>퇴근</button>
+        </li>
+        <li className="row">
+          <span className="row-icon" aria-hidden="true">🛌</span>
+          <div className="row-main">
+            <strong>내일 하루 쉬기</strong>
+            <span className="sub">{shopText(tomorrowCovered, hours)} · 스트레스 −{STRESS_REST_DAY}</span>
+          </div>
+          <button className="btn" disabled={!can(() => takeDayOff(state))} onClick={() => update(takeDayOff)}>쉬기</button>
+        </li>
+        <li className="row">
+          <span className="row-icon" aria-hidden="true">🏖️</span>
+          <div className="row-main">
+            <strong>휴가 {VACATION_DAYS}일</strong>
+            <span className="sub">내일부터 {VACATION_DAYS}일 · 사장님 개인 돈 {won(VACATION_COST)}(가게 이익과 별개) · 그동안 {shopText(tomorrowCovered, hours)} · 스트레스 −{STRESS_REST_DAY * VACATION_DAYS}</span>
+          </div>
+          <button className="btn" disabled={!can(() => takeVacation(state))} onClick={() => update(takeVacation)}>떠나기</button>
+        </li>
+      </ul>
+      <p className="sub">정기 휴무도 하루 통째로 쉬는 날이에요. 쉬지 않고 계속 일하면 스트레스가 쌓여 결국 쓰러져요. 알바를 뽑아 두면 쉬는 동안에도 가게를 열 수 있어요.</p>
+    </>
+  );
+}
 
 export function ShopPanel({ state, update }: PanelProps) {
   const st = state.settings;
@@ -53,6 +118,8 @@ export function ShopPanel({ state, update }: PanelProps) {
         ))}
       </div>
       <p className="sub">휴무일엔 매출·알바비·공과금이 없고 월세는 그대로 나가요. 충전된 시간도 쓰지 않아요.</p>
+
+      <RestSection state={state} update={update} />
 
       <h4>🛵 배달팁</h4>
       <div className="setting-row">

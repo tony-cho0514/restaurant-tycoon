@@ -5,6 +5,7 @@ import { INGREDIENT_IDS, ingredientPrice, type IngredientId } from './ingredient
 import { DEFAULT_RULES, autoReorder, emptyInventory } from './inventory';
 import { emptyDay } from './ledger';
 import { MENU, activePizzas, defaultMenuActive, type MenuActive, type MenuItemId } from './menu';
+import { initialOwner } from './owner';
 import { initialStaff } from './staff';
 import { defaultUpgrades } from './upgrades';
 import { NEIGHBORHOODS, cashAfterSetup, type Neighborhood, type NeighborhoodId } from './neighborhoods';
@@ -80,5 +81,6 @@ export function createNewGame(o: { seed: number; neighborhoodId: NeighborhoodId;
     groupOffers: [],
     groupOrders: [],
     nextStaffId: 2,
+    owner: initialOwner({ hall: 4.5, delivery: 4.5 }),
   };
 }

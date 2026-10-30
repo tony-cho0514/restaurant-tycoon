@@ -19,12 +19,32 @@ test('monthEnd 멈춤은 28일에 한 번', () => {
   expect(n).toBe(3);
 });
 
-test('밸런스: 기본 운영 1년, 동네 3곳 × seed 5개의 월 이익 중앙값 300만~1,200만 원', () => {
+/** 1년 동안 장사한 월 이익 중앙값과 쓰러진 횟수 */
+function year(id: 'campus' | 'office' | 'residential', closedDay: number | null, seeds = 5) {
+  const profits: number[] = []; let burnouts = 0;
+  for (let seed = 1; seed <= seeds; seed++) {
+    const s = createNewGame({ seed, neighborhoodId: id, shopName: 't', nowMs: 0 });
+    s.settings = { ...s.settings, closedDay };
+    for (let i = 0; i < 12 * 28 * 11; i++) advanceTickInPlace(s);
+    profits.push(...s.ledger.months.map(profitOf));
+    burnouts += s.news.items.filter((n) => n.headline.includes('쓰러졌')).length;
+  }
+  profits.sort((a, b) => a - b);
+  return { med: profits[Math.floor(profits.length / 2)], burnouts };
+}
+
+test('밸런스: 일요일 정기 휴무로 1년, 동네 3곳 × seed 5개의 월 이익 중앙값 200만~1,200만 원', () => {
   for (const id of ['campus', 'office', 'residential'] as const) {
-    const profits: number[] = [];
-    for (let seed = 1; seed <= 5; seed++) { const s = createNewGame({ seed, neighborhoodId: id, shopName: 't', nowMs: 0 }); for (let i = 0; i < 12 * 28 * 11; i++) advanceTickInPlace(s); profits.push(...s.ledger.months.map(profitOf)); }
-    profits.sort((a, b) => a - b); const med = profits[Math.floor(profits.length / 2)];
-    expect(med).toBeGreaterThan(3_000_000); expect(med).toBeLessThan(12_000_000);
+    const { med } = year(id, 6);
+    expect(med).toBeGreaterThan(2_000_000); expect(med).toBeLessThan(12_000_000);
+  }
+}, 120_000);
+
+test('쉬는 날 없이 1년 일하면 여러 번 쓰러지고, 대학가·오피스에선 일요일에 쉬는 쪽보다 덜 번다', () => {
+  for (const id of ['campus', 'office'] as const) {
+    const noRest = year(id, null, 3), rest = year(id, 6, 3);
+    expect(noRest.burnouts).toBeGreaterThan(3 * 6);
+    expect(noRest.med).toBeLessThan(rest.med);
   }
 }, 120_000);
 

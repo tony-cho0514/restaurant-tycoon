@@ -44,6 +44,7 @@ export function LedgerPanel({ state }: PanelProps) {
       <div className="ledger-top">
         <div><span className="sub">통장 잔고</span><strong className={state.cash < 0 ? 'neg' : ''}>{won(state.cash)}</strong></div>
         <div><span className="sub">이번 달 재료 구입(현금)</span><strong>{won(current.purchases)}</strong></div>
+        {current.ownerDraw > 0 && <div><span className="sub">사장님 개인 지출(휴가, 이익과 별개)</span><strong>{won(current.ownerDraw)}</strong></div>}
       </div>
       <table className="ledger">
         <thead>

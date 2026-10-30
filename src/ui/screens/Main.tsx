@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { acceptGroup, declineGroup } from '../../sim/groupOrders';
+import { ownerWorking } from '../../sim/owner';
 import { staffWorking } from '../../sim/staffing';
 import { tableCount } from '../../sim/upgradeOps';
 import type { GameState } from '../../sim/types';
@@ -79,7 +80,7 @@ export function Main({ initial, now = Date.now, persist, saveFailed = false, onR
           weather={pb.state.economy.weather}
           mood={moodOf(pb.state.news.active.filter((a) => a.untilDay >= pb.state.clock.day), pb.state.economy.cycle)}
           tables={tableCount(pb.state)}
-          staff={1 + staffWorking(pb.state, pb.state.clock.hour).length}
+          staff={(ownerWorking(pb.state, pb.state.clock.hour) ? 1 : 0) + staffWorking(pb.state, pb.state.clock.hour).length}
         />
         <PlaybackBar
           state={pb.state}

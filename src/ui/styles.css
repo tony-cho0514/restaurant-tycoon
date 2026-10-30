@@ -119,12 +119,26 @@ button { font: inherit; color: inherit; }
 .speeds { display: flex; gap: 4px; }
 .speeds .btn { padding: 6px 10px; }
 .speeds .btn[aria-pressed='true'] { background: var(--ink); color: #fff; border-color: var(--ink); }
-.playbar-info { flex: 1; min-width: 180px; }
+.playbar-info { flex: 1; min-width: 150px; }
 .clock { font-weight: 700; }
 .charge { color: var(--ink-soft); font-size: 14px; }
 .cash { display: flex; flex-direction: column; align-items: flex-end; font-weight: 800; font-size: 20px; font-variant-numeric: tabular-nums; }
 .cash-label { font-size: 12px; font-weight: 600; color: var(--ink-soft); }
 .neg { color: var(--bad); }
+.stress { display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+.stress-face { font-size: 26px; line-height: 1; }
+.stress-text { display: flex; flex-direction: column; gap: 3px; }
+.stress-bar { display: block; width: 64px; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.stress-bar > span { display: block; height: 100%; background: var(--good, #4a9d5b); transition: width 0.4s ease; }
+.stress-mid .stress-bar > span { background: #e0a030; }
+.stress-high .stress-bar > span { background: var(--bad); }
+.stress-high > b { color: var(--bad); }
+.stress-reasons { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; padding: 0; list-style: none; }
+.stress-reasons li { font-size: 13px; padding: 3px 8px; border-radius: 999px; background: var(--line); }
+.stress-reasons li.up { background: #f7d4cf; color: var(--bad); }
+.stress-reasons li.down { background: #d8eedc; color: #2f6b3a; }
+.rest-actions { display: grid; gap: 8px; }
+.rest-actions .row { align-items: center; }
 
 .modal-backdrop {
   position: fixed; inset: 0;

@@ -44,6 +44,8 @@ export function PauseModal({ reason, state, now, onDismiss, onGoto, onAccept = (
     tone = item?.tone ?? 'neutral';
     if (item?.kind === 'signal') {
       extra = <button className="btn" onClick={() => { onGoto('inventory'); onDismiss({ resume: false }); }}>재고·발주 보기</button>;
+    } else if (item?.headline.startsWith('[사장님]')) {
+      extra = <button className="btn" onClick={() => { onGoto('shop'); onDismiss({ resume: false }); }}>쉬는 방법 보기</button>;
     }
   } else if (reason.kind === 'groupOffer') {
     const o = state.groupOffers.find((x) => x.id === reason.offerId);

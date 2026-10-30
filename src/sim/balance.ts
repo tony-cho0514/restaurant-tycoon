@@ -63,3 +63,55 @@ export const WEATHER_DEMAND = {
   heat: { hall: 0.85, delivery: 1.15 },
   cold: { hall: 0.9, delivery: 1.1 },
 } as const;
+
+// ── 사장님 스트레스(0~100) ──────────────────────────
+export const STRESS_START = 20;
+/** 가게에서 일한 한 시간마다 */
+export const STRESS_PER_WORK_HOUR = 0.25;
+/** 알바 없이 혼자 가게를 본 한 시간마다 더 */
+export const STRESS_SOLO_HOUR = 0.1;
+/** 놓친 주문 한 건마다, 한 시간에 최대 */
+export const STRESS_PER_LOST_ORDER = 0.3;
+export const STRESS_LOST_MAX_PER_HOUR = 2;
+/** 영업시간 중에 퇴근해서 쉰 한 시간마다 줄어듦 */
+export const STRESS_REST_HOUR = 1.5;
+/** 문 닫고 자는 밤마다 줄어듦 */
+export const STRESS_SLEEP = 2;
+/** 하루 10시간 넘게 일하면 넘는 한 시간마다 */
+export const STRESS_LONG_DAY_HOURS = 10;
+export const STRESS_LONG_HOUR = 0.8;
+/** 쉬는 날 없이 5일 넘게 일하면 넘는 하루마다 */
+export const STRESS_STREAK_FREE_DAYS = 5;
+export const STRESS_STREAK_PER_DAY = 0.5;
+export const STRESS_STREAK_MAX = 3;
+/** 하루 통째로 쉬면(휴무·하루 쉬기·휴가) 줄어듦 */
+export const STRESS_REST_DAY = 18;
+/** 이 위면 지쳐서 실수가 늘고, 넘을 때 「좀 쉬세요」 알림 */
+export const STRESS_TIRED = 70;
+/** 알림을 다시 하려면 여기까지 내려와야 한다 */
+export const STRESS_WARN_RESET = 60;
+/** 이 위면 번아웃: 쓰러져서 며칠 쉰다 */
+export const STRESS_BURNOUT = 90;
+export const BURNOUT_DAYS = 2;
+/** 이 아래면 컨디션이 좋아 응대가 조금 좋아진다 */
+export const STRESS_GOOD = 30;
+/** 홀 만족도 보정: 컨디션 좋을 때 / 지쳤을 때 */
+export const MOOD_SAT_GOOD = 0.1;
+export const MOOD_SAT_TIRED = -0.15;
+/** 지쳤을 때 한 시간에 피자 한 판을 망쳐 버릴 확률 */
+export const TIRED_MISTAKE_CHANCE = 0.25;
+/** 휴가: 사흘, 사장님 개인 돈(장부 이익엔 안 잡힘) */
+export const VACATION_DAYS = 3;
+export const VACATION_COST = 300_000;
+/** 사건별 스트레스 */
+export const STRESS_EVENT = {
+  staffAbsent: 2,
+  staffQuit: 4,
+  cashNegative: 8,
+  badNews: 3,
+  groupFail: 6,
+  groupSuccess: -3,
+  ratingDown: 3,
+  ratingUp: -1.5,
+  revenueRecord: -4,
+};

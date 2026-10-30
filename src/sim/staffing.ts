@@ -1,6 +1,7 @@
 // 직원 운영: 근무 시간대, 처리 능력, 채용 공고·지원자·면접·채용·해고, 결근·이직·성향 공개.
 import { OWNER_PIZZAS_PER_HOUR } from './balance';
 import { pushNews } from './news';
+import { ownerPizzas } from './owner';
 import type { Rng } from './rng';
 import type { Applicant, Shift, Staff, Traits } from './staff';
 import type { GameState } from './types';
@@ -30,10 +31,12 @@ export function staffWorking(s: GameState, hour: number): Staff[] {
   return s.staff.filter((x) => worksAt(x, hour) && !absent.includes(x.id));
 }
 
-/** 시간당 만들 수 있는 피자: 사장 + 근무 중 알바(손 빠르기), 오븐 상한 */
+/** 시간당 만들 수 있는 피자: 사장(쉬면 0, 지치면 한 판 덜) + 근무 중 알바(손 빠르기), 오븐 상한 */
 export function capacityAt(s: GameState, hour: number): number {
   const crew = staffWorking(s, hour).reduce((a, x) => a + STAFF_BASE_PIZZAS + STAFF_SPEED_PIZZAS * x.traits.speed, 0);
-  return Math.min(Math.round(OWNER_PIZZAS_PER_HOUR + crew) - (s.levers.reviewReplies ? 1 : 0), ovenCap(s));
+  const hands = ownerPizzas(s, hour, OWNER_PIZZAS_PER_HOUR) + crew;
+  if (hands === 0) return 0;
+  return Math.max(0, Math.min(Math.round(hands) - (s.levers.reviewReplies ? 1 : 0), ovenCap(s)));
 }
 
 /** 근무 중 알바의 친절함이 홀 만족도에 주는 보정 */
