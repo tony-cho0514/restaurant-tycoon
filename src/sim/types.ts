@@ -8,6 +8,7 @@ import type { MenuItemId } from './menu';
 import type { NeighborhoodId } from './neighborhoods';
 import type { NewsState } from './news';
 import type { LearningState } from './learning';
+import type { LocalState } from './localEvents';
 import type { MessageState } from './messages';
 import type { OwnerState } from './owner';
 import type { OrderRecord } from './orders';
@@ -67,6 +68,8 @@ export interface GameState {
   messages: MessageState;
   /** 배움: 월말 부검 리포트, 위기 리포트, 도감, 내가 바꾼 결정 */
   learning: LearningState;
+  /** 동네 사정: 공사·경쟁 가게·배달앱 노출 하락 */
+  local: LocalState;
 }
 
 export interface Settings {

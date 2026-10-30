@@ -39,6 +39,8 @@ test('일찍 퇴근하면 남은 시간엔 사장님이 없고, 알바가 없으
 
 test('하루 쉬기: 다음 날은 알바만 일하고, 스트레스가 크게 준다', () => {
   let s = g(); s.owner = { ...s.owner, stress: 60 };
+  // 알바가 결근하지 않게(그날 가게를 알바가 열어야 한다)
+  s.staff = s.staff.map((x) => ({ ...x, traits: { ...x.traits, diligence: 1 } }));
   s = takeDayOff(s);
   s = playDay(s); // 0일 영업
   const mid = s.owner.stress;

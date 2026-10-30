@@ -1,3 +1,4 @@
+import { paceVsUsual } from '../../sim/localEvents';
 import type { ActiveShock } from '../../sim/news';
 import { AWAY_LABEL, STRESS_BURNOUT, STRESS_GOOD, STRESS_TIRED, ownerAway, ownerWorking, stressFace } from '../../sim/owner';
 import { capacityAt, staffWorking } from '../../sim/staffing';
@@ -19,6 +20,18 @@ function Sparkline({ values }: { values: number[] }) {
     <svg className="spark" viewBox="0 0 100 42" preserveAspectRatio="none" role="img" aria-label="최근 7일 매출">
       <polyline points={pts} fill="none" stroke="var(--tomato)" strokeWidth="2" vectorEffect="non-scaling-stroke" />
     </svg>
+  );
+}
+
+/** 오늘 손님이 평소 이맘때와 얼마나 다른지. 왜인지는 말하지 않는다(사장님이 찾아낼 몫). */
+function Pace({ state }: { state: GameState }) {
+  const p = paceVsUsual(state);
+  if (p === null || Math.abs(p) < 0.15) return null;
+  const pct = Math.round(Math.abs(p) * 100);
+  return (
+    <p className={`pace ${p < 0 ? 'down' : 'up'}`} role="status">
+      {p < 0 ? `📉 오늘 손님이 평소 이맘때보다 ${pct}% 적어요` : `📈 오늘 손님이 평소 이맘때보다 ${pct}% 많아요`}
+    </p>
   );
 }
 
@@ -87,6 +100,7 @@ export function StatusPanel({ state }: PanelProps) {
         <div><span className="stat-icon" aria-hidden="true">🍽️</span><span className="sub">홀 평점</span><strong>{stars(state.ratings.hall)}</strong></div>
         <div><span className="stat-icon" aria-hidden="true">📱</span><span className="sub">배달앱 평점</span><strong>{stars(state.ratings.delivery)}</strong></div>
       </div>
+      <Pace state={state} />
       {chips.length > 0 && (
         <div className="chips">
           {chips.map((c, i) => <span key={`${c.text}-${i}`} className={`chip tone-${c.tone}`}>{c.text}</span>)}

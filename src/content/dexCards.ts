@@ -5,7 +5,8 @@ export type CardId =
   | 'revenueProfit' | 'fixedVariable' | 'contribution' | 'breakeven' | 'costRate' | 'cashflow'
   | 'elasticity' | 'reputation' | 'retention' | 'trust'
   | 'fx' | 'supplyShock' | 'hedging' | 'inventory'
-  | 'bottleneck' | 'opportunityCost' | 'laborCost' | 'sustainability';
+  | 'bottleneck' | 'opportunityCost' | 'laborCost' | 'sustainability'
+  | 'competition' | 'seasonality';
 
 export interface CardDef {
   title: string;
@@ -19,9 +20,9 @@ export interface CardDef {
 
 export const CARD_IDS: CardId[] = [
   'revenueProfit', 'fixedVariable', 'contribution', 'breakeven', 'costRate', 'cashflow',
-  'elasticity', 'reputation', 'retention', 'trust',
+  'elasticity', 'reputation', 'retention', 'trust', 'competition',
   'fx', 'supplyShock', 'hedging', 'inventory',
-  'bottleneck', 'opportunityCost', 'laborCost', 'sustainability',
+  'bottleneck', 'opportunityCost', 'laborCost', 'sustainability', 'seasonality',
 ];
 
 export const CARDS: Record<CardId, CardDef> = {
@@ -75,6 +76,11 @@ export const CARDS: Record<CardId, CardDef> = {
     text: '약속은 기대를 만들어요. 지키면 신뢰가 쌓이고, 어기면 아무 말도 안 한 것보다 더 나빠질 수 있어요.',
     howTo: '손님과 한 메뉴 약속의 결과가 나오면 열려요.',
   },
+  competition: {
+    title: '경쟁', category: '가격·손님', icon: '🥊',
+    text: '같은 손님을 두고 다투는 가게가 생기면 손님을 나눠 갖게 돼요. 값만이 아니라 맛·속도·서비스로 「여기여야 하는 이유」가 있어야 덜 뺏겨요.',
+    howTo: '근처에 경쟁 가게가 생기면 열려요.',
+  },
   fx: {
     title: '환율과 수입 원가', category: '원가·재고', icon: '💱',
     text: '환율이 오르면(원화 가치가 내리면) 같은 수입 재료를 사는 데 원화가 더 들어요. 치즈·밀가루처럼 수입하는 재료일수록 영향을 받아요.',
@@ -109,6 +115,11 @@ export const CARDS: Record<CardId, CardDef> = {
     title: '인건비 구조', category: '운영', icon: '🧾',
     text: '알바비는 시급 × 시간만이 아니에요. 4대보험 사업주 부담이 더해지고, 한 주에 15시간 넘게 일하면 주휴수당(일한 시간의 5분의 1만큼)이 붙어요.',
     howTo: '알바가 하루 일하면 열려요.',
+  },
+  seasonality: {
+    title: '비수기와 계절성', category: '운영', icon: '📅',
+    text: '해마다 같은 때 손님이 줄고 느는 흐름이에요. 미리 알 수 있으니, 비수기엔 비용을 줄이고 성수기엔 일손과 재료를 미리 맞춰 둬요.',
+    howTo: '방학·휴가철·명절처럼 해마다 오는 비수기를 겪으면 열려요.',
   },
   sustainability: {
     title: '지속 가능성', category: '운영', icon: '🔋',

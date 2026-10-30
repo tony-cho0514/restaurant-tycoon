@@ -7,7 +7,7 @@ import { LEVERS, LEVER_IDS, type Levers } from './levers';
 import { MENU, PIZZA_IDS, type MenuActive, type MenuItemId } from './menu';
 import { pushMessage } from './messages';
 import type { NewsItem } from './news';
-import { buildMonthReport, monthLabel, reportMoney as money, type Decision, type MonthReport } from './report';
+import { buildMonthReport, monthLabel, reportMoney as money, type Decision, type MonthReport, type ReportInput } from './report';
 import { shiftHours } from './staffing';
 import { DAY_NAMES } from './time';
 import type { GameState, Settings } from './types';
@@ -277,10 +277,10 @@ function dayCards(s: GameState, rec: DayRecord): void {
 }
 
 /** 월말(그달 기록이 장부에 들어간 다음): 부검 리포트를 만들고, 처음이면 돈의 기본 카드를 연다. */
-export function monthEndLearning(s: GameState, monthIndex: number): MonthReport {
+export function monthEndLearning(s: GameState, monthIndex: number, local: ReportInput['local'] = []): MonthReport {
   const report = buildMonthReport({
     monthIndex, number: s.learning.reports.length + 1, months: s.ledger.months, days: s.ledger.days,
-    news: s.news.items, messages: s.messages.items, decisions: s.learning.decisions,
+    news: s.news.items, messages: s.messages.items, decisions: s.learning.decisions, local,
   });
   s.learning = { ...s.learning, reports: [...s.learning.reports, report].slice(-REPORTS_KEEP) };
   pushMessage(s, {

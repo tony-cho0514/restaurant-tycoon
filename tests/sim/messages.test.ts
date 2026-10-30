@@ -80,7 +80,8 @@ test('위기 신호는 멈추지 않고 거래처 귀띔으로, 실제로 터지
   let r = advanceTick(s);
   while (r.state.clock.day < 1 || r.state.openedDay < 1) r = advanceTick(r.state);
   expect(r.pauses.some((p) => p.kind === 'news')).toBe(true);
-  expect(r.state.messages.items.some((x) => x.day === 1 && x.shockType === 'CHEESE_SHORTAGE' && x.from === 'news')).toBe(true);
+  // 터진 소식은 뉴스나 거래처 말로 온다(문구 틀에 따라)
+  expect(r.state.messages.items.some((x) => x.day === 1 && x.shockType === 'CHEESE_SHORTAGE' && (x.from === 'news' || x.from === 'supplier'))).toBe(true);
 });
 
 test('작은 소식(단체 주문 실패)은 멈추지 않고 중요한 말풍선으로 온다', () => {

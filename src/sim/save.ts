@@ -11,6 +11,7 @@ import { LEVER_IDS } from './levers';
 import { MENU } from './menu';
 import { NEIGHBORHOODS } from './neighborhoods';
 import { initialLearning } from './learning';
+import { initialLocal } from './localEvents';
 import { initialMessages } from './messages';
 import { initialOwner } from './owner';
 import { advanceTickInPlace } from './tick';
@@ -75,7 +76,8 @@ function hasGameShape(x: unknown): x is GameState {
     allNums(s.owner, ['stress', 'daysWithoutRest', 'awayFrom', 'awayUntil']) && Array.isArray((s.owner as Record<string, unknown>).log) &&
     obj(s.messages) && Array.isArray(s.messages.items) && num(s.messages.nextId) && Array.isArray(s.messages.pending) &&
     obj(s.learning) && Array.isArray(s.learning.reports) && Array.isArray(s.learning.shockReports) && obj(s.learning.dex) &&
-    Array.isArray(s.learning.decisions) && Array.isArray(s.learning.shocks)
+    Array.isArray(s.learning.decisions) && Array.isArray(s.learning.shocks) &&
+    obj(s.local) && Array.isArray(s.local.events) && num(s.local.nextId)
   );
 }
 
@@ -127,6 +129,7 @@ function withExtras(x: Record<string, unknown>): Record<string, unknown> {
     out = { ...out, messages: { ...out.messages, pending: [] } };
   }
   if (!obj(out.learning)) out = { ...out, learning: initialLearning() };
+  if (!obj(out.local)) out = { ...out, local: initialLocal() };
   return out;
 }
 

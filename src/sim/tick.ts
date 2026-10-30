@@ -16,6 +16,7 @@ import { pruneOrders, type OrderRecord } from './orders';
 import { dailyLabor } from './labor';
 import { absenceMessages, dayEndMessage, fromNews, hourMessages, pushMessage, tiredMessage, type ReviewSeed } from './messages';
 import { dayEndLearning, monthEndLearning, startShock } from './learning';
+import { MONSOON_DELIVERY_DELAY, inMonsoon, localDemand, localEvening, localEventsIn, localMorning, monsoonRain, planLocalWeek } from './localEvents';
 import { dayEndFollowUps, dueCoupons, settleCoupons } from './replies';
 import { announceMinWage, applyMinWage, dailyFlavor, demandShock, fireDue, planWeek, shockMultiplier, type NewsItem } from './news';
 import { satisfaction, updateRating, type Channel } from './ratings';
@@ -48,6 +49,8 @@ export interface AnimEvents {
   stockouts: IngredientId[];
 }
 
+const combine = (a: { hall: number; delivery: number }, b: { hall: number; delivery: number }) => ({ hall: a.hall * b.hall, delivery: a.delivery * b.delivery });
+
 function addUsage(u: Usage, id: IngredientId, qty: number) {
   u[id] = (u[id] ?? 0) + qty;
 }
@@ -60,6 +63,7 @@ function openDay(s: GameState, rng: Rng): number[] {
   if (cal.dayOfWeek === 0) {
     s.economy = stepEconomyWeek(s.economy, rng);
     ({ news: s.news, economy: s.economy } = planWeek(s.news, s.economy, day, rng, n.name));
+    planLocalWeek(s, rng);
   }
   ({ news: s.news, economy: s.economy } = fireDue(s.news, s.economy, day, rng, n.name));
   if (cal.month === 7 && cal.dayOfMonth === 0) ({ news: s.news, economy: s.economy } = announceMinWage(s.news, s.economy, day, rng));
@@ -67,7 +71,7 @@ function openDay(s: GameState, rng: Rng): number[] {
     s.economy = applyMinWage(s.economy);
     Object.assign(s, raiseToMinWage(s));
   }
-  s.economy = { ...s.economy, weather: rollWeather(cal.season, rng) };
+  s.economy = { ...s.economy, weather: monsoonRain(day, rng) ? 'rain' : rollWeather(cal.season, rng) };
 
   for (const id of INGREDIENT_IDS) {
     s.prices[id] = ingredientPrice(id, {
@@ -107,6 +111,7 @@ function openDay(s: GameState, rng: Rng): number[] {
     absenceMessages(s);
   }
   Object.assign(s, arriveApplicants(s, rng));
+  localMorning(s);
   const g = morningGroupOffers(s, rng);
   Object.assign(s, g.state);
   return g.newOffers;
@@ -128,7 +133,7 @@ function serveOrders(s: GameState, rng: Rng, anim: AnimEvents) {
   const cal = calendar(s.clock);
   const exp = expectedOrders({
     n, hour: s.clock.hour, isWeekend: cal.isWeekend, economy: s.economy, menuPrices: s.menuPrices,
-    ratings: s.ratings, levers: s.levers, shock: demandShock(s.news.active, s.clock.day),
+    ratings: s.ratings, levers: s.levers, shock: combine(demandShock(s.news.active, s.clock.day), localDemand(s, s.clock.day)),
     deliveryTip: s.settings.deliveryTip,
     active: s.menuActive,
   });
@@ -204,7 +209,9 @@ function serveOrders(s: GameState, rng: Rng, anim: AnimEvents) {
     if (ch === 'delivery') {
       const z = rng.weighted(zoneList);
       zone = z.name;
-      minutes = Math.max(15, Math.round(served.waitDelivery + z.extraMin - bikeMinutes(s)));
+      // 장마철 비 오는 날엔 배달 기사가 모자라 더 늦는다.
+      const rainDelay = inMonsoon(s.clock.day) && s.economy.weather === 'rain' ? MONSOON_DELIVERY_DELAY : 0;
+      minutes = Math.max(15, Math.round(served.waitDelivery + z.extraMin + rainDelay - bikeMinutes(s)));
       const appFee = revenue * APP_FEE_RATE;
       s.today.appFees += appFee;
       const ownerDelivery = DELIVERY_COST_TOTAL - s.settings.deliveryTip;
@@ -333,9 +340,11 @@ function closeDayInPlace(s: GameState, pauses: PauseReason[], closed: boolean) {
   s.ledger = closeDay(s.ledger, s.today);
   s.orders = pruneOrders(s.orders, s.clock.day);
   dayEndLearning(s);
+  localEvening(s);
   if (cal.dayOfMonth === 27) {
     s.ledger = closeMonth(s.ledger, cal.monthIndex);
-    monthEndLearning(s, cal.monthIndex);
+    const from = cal.monthIndex * 28;
+    monthEndLearning(s, cal.monthIndex, localEventsIn(s, from, from + 27));
     pauses.push({ kind: 'monthEnd', monthIndex: cal.monthIndex });
   }
 }

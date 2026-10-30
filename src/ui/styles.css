@@ -396,3 +396,6 @@ body { touch-action: manipulation; padding: env(safe-area-inset-top) env(safe-ar
 .dex-head span:first-child { font-size: 20px; }
 .dex-story { margin: 0; font-size: 14px; padding: 6px 8px; background: #eef4de; border-radius: 8px; }
 .dex-text { margin: 0; font-size: 14px; color: var(--ink-soft); }
+.pace { margin: 0; padding: 8px 12px; border-radius: 10px; font-weight: 700; font-size: 15px; }
+.pace.down { background: #f7d4cf; color: var(--bad); }
+.pace.up { background: #e3efd2; color: var(--good); }

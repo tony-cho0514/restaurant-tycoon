@@ -167,7 +167,8 @@ function changeParts(cur: MonthRecord, prev: MonthRecord, curDays: DayRecord[], 
   return parts.map((p) => ({ ...p, amount: Math.round(p.amount) })).filter((p) => p.amount !== 0);
 }
 
-const HINT: Record<PartKey | 'lost' | 'breakeven' | 'burnout', [string, string]> = {
+const HINT: Record<PartKey | 'lost' | 'breakeven' | 'burnout' | 'local', [string, string]> = {
+  local: ['동네 사정으로 주문이 줄었어요', '그 기간엔 비용(알바 시간·영업시간)을 줄이거나, 다른 손님(배달 광고·새 메뉴·가격)을 찾아보세요.'],
   burnout: ['사장님이 쓰러져 문을 닫은 날이 있어 주문이 줄었어요', '쉬는 날을 미리 정하고, 알바에게 맡겨 사장님 없이도 가게가 열리게 해 보세요.'],
   volume: ['주문이 줄었어요', '평점(메시지 탭 리뷰 요약), 가격, 경기, 쉬는 날 수를 보세요. 배달앱 광고로 손님을 늘려 볼 수도 있어요.'],
   group: ['단체 주문이 줄었어요', '단체 주문 요청을 받을 수 있게 재료와 일손에 여유를 두세요.'],
@@ -186,7 +187,7 @@ const HINT: Record<PartKey | 'lost' | 'breakeven' | 'burnout', [string, string]>
   breakeven: ['하루 주문이 손익분기점보다 적어요', '고정비(알바 시간·영업시간)를 줄이거나 주문 하나에 남는 돈을 늘려야 해요.'],
 };
 
-function pickCause(parts: ReportPart[], lostValue: number, kpi: Kpi, mode: MonthReport['mode'], burnout: boolean): [string, string] {
+function pickCause(parts: ReportPart[], lostValue: number, kpi: Kpi, mode: MonthReport['mode'], burnout: boolean, slow: string[]): [string, string] {
   if (mode === 'structure') {
     if (kpi.breakevenPerDay !== null && kpi.actualPerDay < kpi.breakevenPerDay) return HINT.breakeven;
     if (lostValue > 0) return HINT.lost;
@@ -199,6 +200,7 @@ function pickCause(parts: ReportPart[], lostValue: number, kpi: Kpi, mode: Month
     return [best ? `가장 크게 도운 건 「${best.label}」이에요` : '지난달과 거의 같아요', '잘된 이유를 다음 달에도 이어 가 보세요.'];
   }
   if (worst.key === 'volume' && burnout) return HINT.burnout;
+  if (worst.key === 'volume' && slow.length > 0) return [`${slow.join('·')} 때문에 주문이 줄었어요`, HINT.local[1]];
   return HINT[worst.key];
 }
 
@@ -210,6 +212,8 @@ export interface ReportInput {
   news: NewsItem[];
   messages: Message[];
   decisions: Decision[];
+  /** 그달의 동네 사정(공사·경쟁 가게·방학·명절 등) */
+  local?: { day: number; label: string; text: string; tone: NewsItem['tone'] }[];
 }
 
 export function buildMonthReport(x: ReportInput): MonthReport {
@@ -226,10 +230,14 @@ export function buildMonthReport(x: ReportInput): MonthReport {
   const to = from + DAYS_PER_MONTH - 1;
   const inMonth = (d: number) => d >= from && d <= to;
   const burnout = x.news.some((n) => inMonth(n.day) && n.headline.startsWith('[사장님] 과로'));
-  const [cause, hint] = pickCause(parts, lostValue, kpi, mode, burnout);
+  const local = x.local ?? [];
+  const slow = [...new Set(local.filter((e) => e.tone === 'bad').map((e) => e.label))];
+  const [cause, hint] = pickCause(parts, lostValue, kpi, mode, burnout, slow);
   const events = x.news
     .filter((n) => inMonth(n.day) && (n.kind === 'fire' || (n.important && n.kind === 'announce')) && !n.headline.startsWith('「'))
-    .map((n) => ({ day: n.day, text: n.headline.replace(/^\[[^\]]+\]\s*/, ''), tone: n.tone }));
+    .map((n) => ({ day: n.day, text: n.headline.replace(/^\[[^\]]+\]\s*/, ''), tone: n.tone }))
+    .concat(local.map((e) => ({ day: e.day, text: e.text, tone: e.tone })))
+    .sort((a, b) => a.day - b.day);
   const openOrders = (d: DayRecord) => orders(d);
   const avg = (ds: DayRecord[]) => {
     const open = ds.filter((d) => openOrders(d) > 0);
