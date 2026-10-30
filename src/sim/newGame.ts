@@ -8,7 +8,7 @@ import { MENU, PIZZA_IDS, type MenuItemId } from './menu';
 import { NEIGHBORHOODS, cashAfterSetup, type Neighborhood, type NeighborhoodId } from './neighborhoods';
 import { Rng } from './rng';
 import { START_MONTH } from './time';
-import type { GameState } from './types';
+import { DEFAULT_SETTINGS, type GameState } from './types';
 
 /** 기본 주문 수로 계산한 하루 재료 사용량. 판매 기록이 쌓이기 전 발주 기준이 된다. */
 export function fallbackUsage(n: Neighborhood): Record<IngredientId, number> {
@@ -35,7 +35,7 @@ export function createNewGame(o: { seed: number; neighborhoodId: NeighborhoodId;
   today.rent = n.listing.monthlyRent;
   today.purchases = stock.spent;
   return {
-    version: 1,
+    version: 2,
     seed: o.seed,
     rngState: rng.state,
     createdAt: o.nowMs,
@@ -64,5 +64,8 @@ export function createNewGame(o: { seed: number; neighborhoodId: NeighborhoodId;
     ledger: { days: [], months: [] },
     today,
     charge: { ticks: NEW_GAME_CHARGE_TICKS, lastAccruedAt: o.nowMs },
+    settings: { ...DEFAULT_SETTINGS },
+    orders: [],
+    openedDay: -1,
   };
 }

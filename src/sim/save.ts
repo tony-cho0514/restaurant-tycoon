@@ -5,7 +5,7 @@ import { LEVER_IDS } from './levers';
 import { MENU } from './menu';
 import { NEIGHBORHOODS } from './neighborhoods';
 import { advanceTickInPlace } from './tick';
-import type { GameState } from './types';
+import { DEFAULT_SETTINGS, type GameState } from './types';
 
 export const SAVE_KEY = 'restaurant-tycoon/save/v1';
 export const BACKUP_KEY = 'restaurant-tycoon/save/v1/bak';
@@ -39,7 +39,7 @@ function hasGameShape(x: unknown): x is GameState {
   const inv = s.inventory as Record<string, unknown>;
   const rules = s.rules as Record<string, unknown>;
   return (
-    s.version === 1 &&
+    s.version === 2 &&
     num(s.seed) && num(s.rngState) && num(s.createdAt) && num(s.cash) &&
     typeof s.shopName === 'string' && typeof s.cashNegative === 'boolean' &&
     typeof s.neighborhoodId === 'string' && s.neighborhoodId in NEIGHBORHOODS &&
@@ -56,12 +56,33 @@ function hasGameShape(x: unknown): x is GameState {
     obj(news) && Array.isArray(news.pending) && Array.isArray(news.active) && Array.isArray(news.items) && num(news.nextId) &&
     obj(ledger) && Array.isArray(ledger.days) && Array.isArray(ledger.months) &&
     allNums(s.today, ['day', 'monthIndex']) &&
-    allNums(s.charge, ['ticks', 'lastAccruedAt'])
+    allNums(s.charge, ['ticks', 'lastAccruedAt']) &&
+    allNums(s.settings, ['openHour', 'closeHour', 'deliveryTip']) &&
+    ((s.settings as unknown as Record<string, unknown>).closedDay === null || num((s.settings as unknown as Record<string, unknown>).closedDay)) &&
+    Array.isArray(s.orders) && num(s.openedDay)
   );
 }
 
+/** 옛 저장 형식을 지금 형식으로 옮긴다(없는 필드는 기본값). */
+export function migrate(x: unknown): unknown {
+  if (!obj(x)) return x;
+  if (x.version === 1) {
+    const clock = obj(x.clock) ? (x.clock as { day: number; hour: number }) : { day: 0, hour: 11 };
+    return {
+      ...x,
+      version: 2,
+      settings: { ...DEFAULT_SETTINGS },
+      orders: [],
+      // 버전 1은 11시 틱에 개점 준비를 했다: 11시보다 뒤라면 그날 준비는 끝난 것
+      openedDay: clock.hour > 11 ? clock.day : clock.day - 1,
+    };
+  }
+  return x;
+}
+
 /** 형태 확인 + 한 틱 시험 실행으로 속까지 멀쩡한지 본다. 멀쩡하면 충전값만 범위 안으로 묶어 돌려준다. */
-function validState(x: unknown): GameState | null {
+function validState(raw: unknown): GameState | null {
+  const x = migrate(raw);
   if (!hasGameShape(x)) return null;
   try {
     advanceTickInPlace(structuredClone(x));
@@ -108,7 +129,7 @@ export function quarantineCorrupt(st: StorageLike): boolean {
 }
 
 export function exportSave(s: GameState, nowMs: number): string {
-  return JSON.stringify({ app: 'restaurant-tycoon', version: 1, exportedAt: nowMs, state: s });
+  return JSON.stringify({ app: 'restaurant-tycoon', version: 2, exportedAt: nowMs, state: s });
 }
 
 export function importSave(text: string): GameState {
@@ -120,7 +141,7 @@ export function importSave(text: string): GameState {
   }
   const file = parsed as { app?: unknown; version?: unknown; state?: unknown };
   if (!file || typeof file !== 'object' || file.app !== 'restaurant-tycoon') throw new SaveImportError('이 게임의 저장 파일이 아니에요');
-  if (file.version !== 1) throw new SaveImportError('지원하지 않는 저장 버전이에요');
+  if (file.version !== 1 && file.version !== 2) throw new SaveImportError('지원하지 않는 저장 버전이에요');
   const state = validState(file.state);
   if (!state) throw new SaveImportError('저장 파일이 손상됐어요');
   return state;

@@ -5,6 +5,12 @@ import { MENU, PIZZA_IDS, type MenuItemId, type PizzaId } from './menu';
 import type { Neighborhood } from './neighborhoods';
 import type { Ratings } from './ratings';
 
+/** 그 시각의 상대 손님 비중. 11~21시는 기본 곡선, 그 밖은 늦게·일찍 열었을 때만 쓰는 값. */
+export function curveAt(n: Neighborhood, hour: number): number {
+  if (hour >= 11 && hour <= 21) return n.hourCurve[hour - 11];
+  return n.extraHours[hour] ?? 0;
+}
+
 /** 피자 가격 수준: 1이면 (기본가 × 물가)와 같다. */
 export function priceIndex(menuPrices: Record<MenuItemId, number>, inflation: number): number {
   let paid = 0;
@@ -46,7 +52,7 @@ export function expectedOrders(inp: {
 }): { hall: number; delivery: number } {
   const { n, economy } = inp;
   const curveSum = n.hourCurve.reduce((s, x) => s + x, 0);
-  const base = (n.baseDailyOrders * n.hourCurve[inp.hour - 11]) / curveSum;
+  const base = (n.baseDailyOrders * curveAt(n, inp.hour)) / curveSum;
   const sens = n.priceSensitivity * CYCLE_SENSITIVITY[economy.cycle];
   const common =
     CYCLE_DEMAND[economy.cycle] *

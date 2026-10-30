@@ -41,8 +41,9 @@ export function calendar(c: Clock) {
   };
 }
 
-export function nextTick(c: Clock): Clock {
-  if (c.hour + 1 >= CLOSE_HOUR) return { day: c.day + 1, hour: OPEN_HOUR };
+/** 다음 영업 시각. 닫는 시각에 닿으면 다음 날 여는 시각으로 넘어간다. */
+export function nextTick(c: Clock, hours: { openHour: number; closeHour: number } = { openHour: OPEN_HOUR, closeHour: CLOSE_HOUR }): Clock {
+  if (c.hour + 1 >= hours.closeHour) return { day: c.day + 1, hour: hours.openHour };
   return { day: c.day, hour: c.hour + 1 };
 }
 

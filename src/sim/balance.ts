@@ -16,7 +16,8 @@ export const INSULATED_BOX_COST = 400;
 export const APP_ADS_WEEKLY = 88_000;
 export const APP_ADS_DEMAND = 1.15;
 
-export const UTILITIES_PER_DAY = 30_000;
+/** 공과금(전기·가스·수도)은 영업 시간에 비례: 11시간이면 약 3만 원 */
+export const UTILITIES_PER_HOUR = 2_730;
 export const LABOR_OVERHEAD = 1.2;
 export const START_MIN_WAGE = 10_030;
 export const STAFF_COUNT = 2;

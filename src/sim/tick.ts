@@ -1,7 +1,7 @@
 // 한 틱 = 영업 1시간. 개점(11시)에 하루 준비, 매시간 손님 응대, 마감(21시)에 하루 정산.
 import {
   APP_ADS_WEEKLY, APP_FEE_RATE, COLA_ATTACH_RATE, DELIVERY_FEE_OWNER, INSULATED_BOX_COST, LABOR_OVERHEAD,
-  MISC_COST_PER_PIZZA, PREMIUM_CHEESE_MULT, STAFF_COUNT, UTILITIES_PER_DAY,
+  MISC_COST_PER_PIZZA, PREMIUM_CHEESE_MULT, STAFF_COUNT, UTILITIES_PER_HOUR,
 } from './balance';
 import { accrueCharge, canPlay, consumeTick } from './charge';
 import { orderMix, expectedOrders, priceIndex } from './demand';
@@ -12,11 +12,12 @@ import { closeDay, closeMonth, emptyDay } from './ledger';
 import { MENU, PIZZA_IDS, type PizzaId } from './menu';
 import { NEIGHBORHOODS } from './neighborhoods';
 import { fallbackUsage } from './newGame';
+import { pruneOrders } from './orders';
 import { announceMinWage, applyMinWage, dailyFlavor, demandShock, fireDue, planWeek, shockMultiplier } from './news';
 import { satisfaction, updateRating, type Channel } from './ratings';
 import { Rng } from './rng';
 import { capacityPerHour, serveHour } from './service';
-import { CLOSE_HOUR, OPEN_HOUR, TICKS_PER_DAY, calendar, nextTick } from './time';
+import { TICKS_PER_DAY, calendar, nextTick } from './time';
 import type { GameState } from './types';
 
 export type PauseReason =
@@ -185,13 +186,30 @@ function serveOrders(s: GameState, rng: Rng, anim: AnimEvents) {
   anim.stockouts = [...stockouts];
 }
 
-function closeDayInPlace(s: GameState, pauses: PauseReason[]) {
+function openHours(s: GameState): number {
+  return Math.max(1, s.settings.closeHour - s.settings.openHour);
+}
+
+function isClosedToday(s: GameState): boolean {
+  return s.settings.closedDay !== null && calendar(s.clock).dayOfWeek === s.settings.closedDay;
+}
+
+/** 이번 틱이 쓰는 충전: 휴무일은 0, 아니면 표준 하루(11)를 영업시간으로 나눈 만큼. */
+export function tickCost(s: GameState): number {
+  return isClosedToday(s) ? 0 : TICKS_PER_DAY / openHours(s);
+}
+
+function closeDayInPlace(s: GameState, pauses: PauseReason[], closed: boolean) {
   const cal = calendar(s.clock);
-  const labor = Math.round((STAFF_COUNT - 1) * TICKS_PER_DAY * s.economy.minWage * LABOR_OVERHEAD);
-  s.today.labor += labor;
-  s.today.utilities += UTILITIES_PER_DAY;
-  s.cash -= labor + UTILITIES_PER_DAY;
-  // 배달앱 광고비는 켜 둔 날마다 하루치(주 광고비의 1/7)씩 나간다.
+  if (!closed) {
+    const hours = openHours(s);
+    const labor = Math.round((STAFF_COUNT - 1) * hours * s.economy.minWage * LABOR_OVERHEAD);
+    const utilities = Math.round(UTILITIES_PER_HOUR * hours);
+    s.today.labor += labor;
+    s.today.utilities += utilities;
+    s.cash -= labor + utilities;
+  }
+  // 배달앱 광고비는 켜 둔 날마다 하루치(주 광고비의 1/7)씩 나간다(휴무일에도 광고는 계속 나간다).
   if (s.levers.appAds) {
     const adsToday = Math.round(APP_ADS_WEEKLY / 7);
     s.today.ads += adsToday;
@@ -201,10 +219,17 @@ function closeDayInPlace(s: GameState, pauses: PauseReason[]) {
   s.today.appFees = Math.round(s.today.appFees);
   s.today.serviceCost = Math.round(s.today.serviceCost);
   s.ledger = closeDay(s.ledger, s.today);
+  s.orders = pruneOrders(s.orders, s.clock.day);
   if (cal.dayOfMonth === 27) {
     s.ledger = closeMonth(s.ledger, cal.monthIndex);
     pauses.push({ kind: 'monthEnd', monthIndex: cal.monthIndex });
   }
+}
+
+function goToNextDay(s: GameState) {
+  const next = { day: s.clock.day + 1, hour: s.settings.openHour };
+  s.today = emptyDay(next.day, calendar(next).monthIndex);
+  s.clock = next;
 }
 
 export function advanceTickInPlace(s: GameState): { pauses: PauseReason[]; anim: AnimEvents } {
@@ -215,11 +240,33 @@ export function advanceTickInPlace(s: GameState): { pauses: PauseReason[]; anim:
     hour: s.clock.hour, hallArrivals: 0, deliveriesOut: 0, pizzasBaked: 0, lostOrders: 0, revenue: 0,
     weather: s.economy.weather, stockouts: [],
   };
+  const { openHour, closeHour } = s.settings;
+  let dayOver = false;
 
-  if (s.clock.hour === OPEN_HOUR) openDay(s, rng);
+  // 새 날의 첫 틱: 여는 시각에 맞추고 개점 준비(경제·뉴스·시세·폐기·발주·월세).
+  if (s.openedDay !== s.clock.day) {
+    s.clock = { day: s.clock.day, hour: openHour }; // 아직 문을 안 열었으니 (바뀐) 여는 시각부터
+    openDay(s, rng);
+    s.openedDay = s.clock.day;
+    if (isClosedToday(s)) {
+      closeDayInPlace(s, pauses, true);
+      dayOver = true;
+    }
+  }
+  anim.hour = s.clock.hour;
   anim.weather = s.economy.weather;
-  serveOrders(s, rng, anim);
-  if (s.clock.hour === CLOSE_HOUR - 1) closeDayInPlace(s, pauses);
+  if (!dayOver && s.clock.hour >= closeHour) {
+    // 영업 중에 닫는 시각을 앞당긴 경우: 손님을 받지 않고 바로 마감
+    closeDayInPlace(s, pauses, false);
+    dayOver = true;
+  }
+  if (!dayOver) {
+    serveOrders(s, rng, anim);
+    if (s.clock.hour >= closeHour - 1) {
+      closeDayInPlace(s, pauses, false);
+      dayOver = true;
+    }
+  }
 
   for (const item of s.news.items) {
     if (item.important && Number(item.id.slice(1)) >= firstNewId) pauses.push({ kind: 'news', newsId: item.id });
@@ -231,9 +278,8 @@ export function advanceTickInPlace(s: GameState): { pauses: PauseReason[]; anim:
     s.cashNegative = false;
   }
 
-  const next = nextTick(s.clock);
-  if (next.day !== s.clock.day) s.today = emptyDay(next.day, calendar(next).monthIndex);
-  s.clock = next;
+  if (dayOver) goToNextDay(s);
+  else s.clock = nextTick(s.clock, s.settings);
   s.rngState = rng.state;
   return { pauses, anim };
 }
@@ -246,9 +292,10 @@ export function advanceTick(s: GameState): { state: GameState; pauses: PauseReas
 
 export function playTick(s: GameState, nowMs: number): { state: GameState; pauses: PauseReason[]; anim: AnimEvents } | null {
   const charge = accrueCharge(s.charge, nowMs);
-  if (!canPlay(charge)) return null;
+  const cost = tickCost(s);
+  if (!canPlay(charge, cost)) return null;
   const state = structuredClone(s);
-  state.charge = consumeTick(charge);
+  state.charge = consumeTick(charge, cost);
   const r = advanceTickInPlace(state);
   return { state, ...r };
 }

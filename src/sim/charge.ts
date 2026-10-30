@@ -18,13 +18,14 @@ export function accrueCharge(c: ChargeState, nowMs: number): ChargeState {
   return { ticks: Math.min(CHARGE_CAP_TICKS, c.ticks + gained), lastAccruedAt: nowMs };
 }
 
-export function canPlay(c: ChargeState): boolean {
-  return c.ticks >= 1;
+/** amount: 이번 틱이 쓰는 충전(표준 하루 11 기준, 영업시간이 길면 한 틱이 덜 쓴다) */
+export function canPlay(c: ChargeState, amount = 1): boolean {
+  return c.ticks >= amount - 1e-9;
 }
 
-export function consumeTick(c: ChargeState): ChargeState {
-  if (!canPlay(c)) throw new Error('충전된 시간이 없어요');
-  return { ticks: c.ticks - 1, lastAccruedAt: c.lastAccruedAt };
+export function consumeTick(c: ChargeState, amount = 1): ChargeState {
+  if (!canPlay(c, amount)) throw new Error('충전된 시간이 없어요');
+  return { ticks: Math.max(0, c.ticks - amount), lastAccruedAt: c.lastAccruedAt };
 }
 
 export function formatCharge(ticks: number): string {

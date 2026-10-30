@@ -10,8 +10,10 @@ export interface Neighborhood {
   deliveryShare: number;
   priceSensitivity: number;
   weekendFactor: number;
-  /** hour 11..21의 상대 손님 비중 */
+  /** hour 11..21의 상대 손님 비중(하루 기본 주문 수의 기준) */
   hourCurve: number[];
+  /** 그 밖의 시각(10시, 22·23시)에 문을 열었을 때의 손님 비중 */
+  extraHours: Partial<Record<number, number>>;
   listing: { deposit: number; monthlyRent: number; keyMoney: number; sizePyeong: number };
 }
 
@@ -25,6 +27,7 @@ export const NEIGHBORHOODS: Record<NeighborhoodId, Neighborhood> = {
     priceSensitivity: 1.4,
     weekendFactor: 0.9,
     hourCurve: [0.6, 1.0, 0.9, 0.5, 0.5, 0.6, 0.9, 1.2, 1.3, 1.1, 0.8],
+    extraHours: { 10: 0.3, 22: 0.9, 23: 0.7 },
     listing: { deposit: 20_000_000, monthlyRent: 1_500_000, keyMoney: 30_000_000, sizePyeong: 12 },
   },
   office: {
@@ -36,6 +39,7 @@ export const NEIGHBORHOODS: Record<NeighborhoodId, Neighborhood> = {
     priceSensitivity: 0.8,
     weekendFactor: 0.5,
     hourCurve: [0.8, 1.6, 1.2, 0.4, 0.3, 0.4, 0.8, 1.0, 0.7, 0.4, 0.2],
+    extraHours: { 10: 0.3, 22: 0.1, 23: 0 },
     listing: { deposit: 25_000_000, monthlyRent: 2_300_000, keyMoney: 25_000_000, sizePyeong: 15 },
   },
   residential: {
@@ -47,6 +51,7 @@ export const NEIGHBORHOODS: Record<NeighborhoodId, Neighborhood> = {
     priceSensitivity: 1.0,
     weekendFactor: 1.3,
     hourCurve: [0.4, 0.7, 0.6, 0.4, 0.4, 0.6, 1.1, 1.5, 1.4, 1.0, 0.6],
+    extraHours: { 10: 0.2, 22: 0.5, 23: 0.3 },
     listing: { deposit: 15_000_000, monthlyRent: 1_100_000, keyMoney: 15_000_000, sizePyeong: 10 },
   },
 };
