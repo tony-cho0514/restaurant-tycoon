@@ -34,3 +34,16 @@ export function clampMenuPrice(price: number): number {
   if (!Number.isFinite(price)) return 1000;
   return Math.min(100_000, Math.max(1000, Math.round(price / 100) * 100));
 }
+
+/** 메뉴 한 판(한 병)에 들어가는 재료와 그 원가. 피자는 여기에 기타 비용(올리브유·피클 등)이 더해진다. */
+export function recipeLines(
+  id: MenuItemId,
+  prices: Record<IngredientId, number>,
+  premiumCheese: boolean,
+): { ingredient: IngredientId; qty: number; cost: number }[] {
+  return (Object.entries(MENU[id].recipe) as [IngredientId, number][]).map(([ingredient, qty]) => ({
+    ingredient,
+    qty,
+    cost: qty * prices[ingredient] * (ingredient === 'mozzarella' && premiumCheese ? PREMIUM_CHEESE_MULT : 1),
+  }));
+}

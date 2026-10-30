@@ -106,3 +106,34 @@ test('인건비 = 시급×시간 + 4대보험 9% + 주 15시간 이상이면 주
   expect(dailyLabor(11, 10030, 77)).toBe(Math.round(11 * 10030 * 1.29));
   expect(dailyLabor(4, 10030, 12)).toBe(Math.round(4 * 10030 * 1.09));
 });
+
+// A5: 재고 개선
+import { manualBuyUnits, stockOf } from '../../src/sim/inventory';
+import { buyCart, storageCapUnits } from '../../src/sim/purchasing';
+import { recipeLines, unitCost } from '../../src/sim/menu';
+import { MISC_COST_PER_PIZZA } from '../../src/sim/balance';
+import { basePrices } from './helpers';
+
+test('서비스 콜라를 꺼 둬도 개수로 사면 0원이 아니다', () => {
+  const s = g();
+  const r = manualBuyUnits(s.inventory, 'cola500', 24, s.prices, 0, storageCapUnits(s, 'cola500'));
+  expect(r.spent).toBeGreaterThan(0); expect(stockOf(r.inv, 'cola500')).toBe(24);
+});
+
+test('여러 재료를 한 번에 사면 합계가 각각의 합과 같고 현금이 그만큼 준다', () => {
+  const s = g();
+  const r = buyCart(s, [{ id: 'mozzarella', mode: 'days', qty: 7 }, { id: 'box', mode: 'days', qty: 7 }, { id: 'cola500', mode: 'units', qty: 10 }]);
+  expect(r.spent).toBe(r.lines.reduce((a, l) => a + l.spent, 0));
+  expect(r.state.cash).toBe(s.cash - r.spent);
+  expect(r.state.today.purchases).toBe(s.today.purchases + r.spent);
+  expect(r.lines.find((l) => l.id === 'cola500')!.spent).toBeGreaterThan(0);
+});
+
+test('메뉴의 재료 구성 합 + 기타 = 한 판 원가', () => {
+  const p = basePrices();
+  for (const id of ['cheese', 'pepperoni', 'combo'] as const) {
+    const lines = recipeLines(id, p, false);
+    expect(Math.round(lines.reduce((a, l) => a + l.cost, 0) + MISC_COST_PER_PIZZA)).toBe(unitCost(id, p, { premiumCheese: false }));
+  }
+  expect(recipeLines('combo', p, false).map((l) => l.ingredient)).toContain('veg');
+});

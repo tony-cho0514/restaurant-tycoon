@@ -128,3 +128,23 @@ export function manualBuyDays(
   if (qty <= EPS) return { inv, spent: 0, capped: want > EPS };
   return { inv: buy(inv, id, qty, prices[id], today), spent: Math.round(qty * prices[id]), capped: want > allowed + EPS };
 }
+
+/** 하루 사용량이 0이어도(예: 서비스를 꺼 둔 서비스용 콜라) 창고에 둘 수 있는 최소 양 */
+export const MIN_STORAGE_UNITS: Record<IngredientId, number> = {
+  flour: 10, mozzarella: 10, tomatoSauce: 5, pepperoni: 3, veg: 3, box: 100, cola: 30, cola500: 48,
+};
+
+/** 개수(kg·개·병)로 미리 사기. 창고 상한(capUnits)을 넘는 만큼은 잘린다. */
+export function manualBuyUnits(
+  inv: Inventory,
+  id: IngredientId,
+  qty: number,
+  prices: Record<IngredientId, number>,
+  today: number,
+  capUnits: number,
+): { inv: Inventory; spent: number; capped: boolean; qty: number } {
+  const allowed = Math.max(0, capUnits - stockOf(inv, id));
+  const take = Math.min(qty, allowed);
+  if (take <= EPS) return { inv, spent: 0, capped: qty > EPS, qty: 0 };
+  return { inv: buy(inv, id, take, prices[id], today), spent: Math.round(take * prices[id]), capped: qty > allowed + EPS, qty: take };
+}
