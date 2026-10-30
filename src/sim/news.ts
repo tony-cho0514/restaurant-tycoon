@@ -200,3 +200,8 @@ export function demandShock(active: ActiveShock[], day: number): { hall: number;
   const festival = active.some((a) => a.type === 'FESTIVAL' && a.untilDay >= day);
   return festival ? { hall: 1.6, delivery: 1.2 } : { hall: 1, delivery: 1 };
 }
+
+/** 다른 모듈(직원·단체 주문)이 뉴스를 남길 때 */
+export function pushNews(ns: NewsState, item: Omit<NewsItem, 'id'>): NewsState {
+  return addItem(ns, item);
+}

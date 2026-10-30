@@ -3,10 +3,11 @@ import { INGREDIENTS, type IngredientId } from './ingredients';
 import { MIN_STORAGE_UNITS, manualBuyUnits } from './inventory';
 import { estimatedUsage } from './tick';
 import type { GameState } from './types';
+import { storageMult } from './upgradeOps';
 
 /** 창고에 둘 수 있는 최대 양(개수). 하루 사용량 × 보관 일수와 최소 보관량 중 큰 쪽. */
 export function storageCapUnits(s: GameState, id: IngredientId, usage = estimatedUsage(s)): number {
-  return Math.max(INGREDIENTS[id].storageMaxDays * usage[id], MIN_STORAGE_UNITS[id]);
+  return Math.max(INGREDIENTS[id].storageMaxDays * usage[id], MIN_STORAGE_UNITS[id]) * storageMult(s);
 }
 
 export interface CartItem {

@@ -12,7 +12,7 @@ export type Channel = 'hall' | 'delivery';
 export function satisfaction(
   ch: Channel,
   /** gaveCola: 서비스 콜라를 실제로 넣었는지(재고가 없으면 못 넣음). 생략하면 수단이 켜진 대로 본다. */
-  ctx: { wait: number; priceIndex: number; priceSensitivity: number; levers: Levers; gaveCola?: boolean },
+  ctx: { wait: number; priceIndex: number; priceSensitivity: number; levers: Levers; gaveCola?: boolean; hallBonus?: number },
   rng: Rng,
 ): number {
   let s = SATISFACTION_BASE;
@@ -23,6 +23,7 @@ export function satisfaction(
     s -= Math.max(0, (ctx.wait - 35) / 20);
   } else {
     s -= Math.max(0, (ctx.wait - 15) / 10);
+    s += ctx.hallBonus ?? 0;
   }
   s -= Math.max(0, ctx.priceIndex - 1) * 2 * ctx.priceSensitivity;
   s += rng.normal(0, 0.3);

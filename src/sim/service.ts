@@ -1,11 +1,3 @@
-import { OVEN_CAP_PER_HOUR, PIZZAS_PER_STAFF_HOUR, STAFF_COUNT } from './balance';
-import type { Levers } from './levers';
-
-export function capacityPerHour(levers: Levers): number {
-  // 리뷰 답글을 달면 사장님 손이 묶여 시간당 1판을 덜 만든다.
-  return Math.min(STAFF_COUNT * PIZZAS_PER_STAFF_HOUR - (levers.reviewReplies ? 1 : 0), OVEN_CAP_PER_HOUR);
-}
-
 export function serveHour(hall: number, delivery: number, capacity: number) {
   const total = hall + delivery;
   const maxServed = Math.floor(capacity * 1.2);

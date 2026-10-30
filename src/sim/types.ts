@@ -56,6 +56,8 @@ export interface GameState {
   groupOrders: GroupOffer[];
   /** 직원·지원자·단체 주문 번호 */
   nextStaffId: number;
+  /** 오늘 결근한 직원 id */
+  absentToday?: number[];
 }
 
 export interface Settings {

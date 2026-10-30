@@ -1,7 +1,7 @@
 // 한 틱 = 영업 1시간. 개점(11시)에 하루 준비, 매시간 손님 응대, 마감(21시)에 하루 정산.
 import {
   APP_ADS_WEEKLY, APP_FEE_RATE, CARD_FEE_RATE, COLA_ATTACH_RATE, DELIVERY_COST_TOTAL, INSULATED_BOX_COST,
-  MISC_COST_PER_PIZZA, PREMIUM_CHEESE_MULT, STAFF_COUNT, UTILITIES_PER_HOUR,
+  MISC_COST_PER_PIZZA, PREMIUM_CHEESE_MULT, UTILITIES_PER_HOUR,
 } from './balance';
 import { accrueCharge, canPlay, consumeTick } from './charge';
 import { orderMix, expectedOrders, priceIndex } from './demand';
@@ -17,15 +17,21 @@ import { dailyLabor } from './labor';
 import { announceMinWage, applyMinWage, dailyFlavor, demandShock, fireDue, planWeek, shockMultiplier } from './news';
 import { satisfaction, updateRating, type Channel } from './ratings';
 import { Rng } from './rng';
-import { capacityPerHour, serveHour } from './service';
+import { serveHour } from './service';
+import { arriveApplicants, capacityAt, kindnessBonus, raiseToMinWage, shiftHours, staffEvening, staffMorning } from './staffing';
+import { failMissedGroups, fulfillGroupsAt, morningGroupOffers } from './groupOrders';
+import { bikeMinutes, hallSeatCap, interiorBonus, signMult, storageMult } from './upgradeOps';
 import { TICKS_PER_DAY, calendar, nextTick } from './time';
 import type { GameState } from './types';
+
+const CASH_WARNING_RESET = 100_000;
 
 export type PauseReason =
   | { kind: 'news'; newsId: string }
   | { kind: 'monthEnd'; monthIndex: number }
   | { kind: 'cashNegative' }
-  | { kind: 'outOfCharge' };
+  | { kind: 'outOfCharge' }
+  | { kind: 'groupOffer'; offerId: number };
 
 export interface AnimEvents {
   hour: number;
@@ -42,7 +48,7 @@ function addUsage(u: Usage, id: IngredientId, qty: number) {
   u[id] = (u[id] ?? 0) + qty;
 }
 
-function openDay(s: GameState, rng: Rng) {
+function openDay(s: GameState, rng: Rng): number[] {
   const n = NEIGHBORHOODS[s.neighborhoodId];
   const cal = calendar(s.clock);
   const day = s.clock.day;
@@ -52,7 +58,10 @@ function openDay(s: GameState, rng: Rng) {
   }
   ({ news: s.news, economy: s.economy } = fireDue(s.news, s.economy, day, rng, n.name));
   if (cal.month === 7 && cal.dayOfMonth === 0) ({ news: s.news, economy: s.economy } = announceMinWage(s.news, s.economy, day, rng));
-  if (cal.month === 1 && cal.dayOfMonth === 0) s.economy = applyMinWage(s.economy);
+  if (cal.month === 1 && cal.dayOfMonth === 0) {
+    s.economy = applyMinWage(s.economy);
+    Object.assign(s, raiseToMinWage(s));
+  }
   s.economy = { ...s.economy, weather: rollWeather(cal.season, rng) };
 
   for (const id of INGREDIENT_IDS) {
@@ -71,7 +80,7 @@ function openDay(s: GameState, rng: Rng) {
   s.today.wasteCost += expired.wasteCost;
 
   const usage = estimatedUsage(s);
-  const order = autoReorder(s.inventory, s.rules, usage, s.prices, day);
+  const order = autoReorder(s.inventory, s.rules, usage, s.prices, day, storageMult(s));
   s.inventory = order.inv;
   s.cash -= order.spent;
   s.today.purchases += order.spent;
@@ -81,6 +90,11 @@ function openDay(s: GameState, rng: Rng) {
     s.today.rent += n.listing.monthlyRent;
   }
   s.news = dailyFlavor(s.news, day, rng, n.name);
+  Object.assign(s, staffMorning(s, rng, cal.dayOfWeek === 0));
+  Object.assign(s, arriveApplicants(s, rng));
+  const g = morningGroupOffers(s, rng);
+  Object.assign(s, g.state);
+  return g.newOffers;
 }
 
 /** 최근 7일 사용량으로 하루 사용량을 추정한다. 콜라 서비스를 켰으면 서비스용 콜라도 배달 주문만큼 잡는다. */
@@ -103,9 +117,16 @@ function serveOrders(s: GameState, rng: Rng, anim: AnimEvents) {
     deliveryTip: s.settings.deliveryTip,
     active: s.menuActive,
   });
-  const served = serveHour(rng.poisson(exp.hall), rng.poisson(exp.delivery), capacityPerHour(s.levers));
-  s.today.lostOrders += served.lost;
-  anim.lostOrders += served.lost;
+  // 단체 주문을 먼저 만들고, 남은 일손으로 손님을 받는다.
+  const groupMade = fulfillGroupsAt(s, capacityAt(s, s.clock.hour));
+  anim.pizzasBaked += groupMade;
+  // 홀은 자리만큼만 받는다(넘친 손님은 그냥 돌아감).
+  const hallArrivals = rng.poisson(exp.hall * signMult(s));
+  const seatLost = Math.max(0, hallArrivals - Math.floor(hallSeatCap(s)));
+  const served = serveHour(hallArrivals - seatLost, rng.poisson(exp.delivery), Math.max(0, capacityAt(s, s.clock.hour) - groupMade));
+  s.today.lostOrders += served.lost + seatLost;
+  anim.lostOrders += served.lost + seatLost;
+  const hallBonus = interiorBonus(s) + kindnessBonus(s, s.clock.hour);
 
   const mix = orderMix(s.menuPrices, s.economy.inflation, n.priceSensitivity, s.economy.cycle, s.menuActive, n.prefs);
   const mixList = activePizzas(s.menuActive).map((id) => ({ item: id as PizzaId, weight: mix[id] }));
@@ -153,7 +174,7 @@ function serveOrders(s: GameState, rng: Rng, anim: AnimEvents) {
     if (ch === 'delivery') {
       const z = rng.weighted(zoneList);
       zone = z.name;
-      minutes = Math.round(served.waitDelivery + z.extraMin);
+      minutes = Math.max(15, Math.round(served.waitDelivery + z.extraMin - bikeMinutes(s)));
       const appFee = revenue * APP_FEE_RATE;
       s.today.appFees += appFee;
       const ownerDelivery = DELIVERY_COST_TOTAL - s.settings.deliveryTip;
@@ -194,6 +215,7 @@ function serveOrders(s: GameState, rng: Rng, anim: AnimEvents) {
       priceSensitivity: n.priceSensitivity,
       levers: s.levers,
       gaveCola,
+      hallBonus,
     }, rng);
     s.ratings = updateRating(s.ratings, ch, sat, s.levers);
   };
@@ -221,7 +243,11 @@ function closeDayInPlace(s: GameState, pauses: PauseReason[], closed: boolean) {
   if (!closed) {
     const hours = openHours(s);
     const openDays = 7 - (s.settings.closedDay === null ? 0 : 1);
-    const labor = (STAFF_COUNT - 1) * dailyLabor(hours, s.economy.minWage, hours * openDays);
+    const absent = s.absentToday ?? [];
+    const labor = s.staff.filter((x) => !absent.includes(x.id)).reduce((a, x) => {
+      const h = shiftHours(s, x.shift);
+      return a + dailyLabor(h, x.wage, h * openDays);
+    }, 0);
     const utilities = Math.round(UTILITIES_PER_HOUR * hours);
     s.today.labor += labor;
     s.today.utilities += utilities;
@@ -237,6 +263,8 @@ function closeDayInPlace(s: GameState, pauses: PauseReason[], closed: boolean) {
   s.today.appFees = Math.round(s.today.appFees);
   s.today.cardFees = Math.round(s.today.cardFees);
   s.today.serviceCost = Math.round(s.today.serviceCost);
+  failMissedGroups(s);
+  if (!closed) Object.assign(s, staffEvening(s));
   s.ledger = closeDay(s.ledger, s.today);
   s.orders = pruneOrders(s.orders, s.clock.day);
   if (cal.dayOfMonth === 27) {
@@ -265,7 +293,7 @@ export function advanceTickInPlace(s: GameState): { pauses: PauseReason[]; anim:
   // 새 날의 첫 틱: 여는 시각에 맞추고 개점 준비(경제·뉴스·시세·폐기·발주·월세).
   if (s.openedDay !== s.clock.day) {
     s.clock = { day: s.clock.day, hour: openHour }; // 아직 문을 안 열었으니 (바뀐) 여는 시각부터
-    openDay(s, rng);
+    for (const offerId of openDay(s, rng)) pauses.push({ kind: 'groupOffer', offerId });
     s.openedDay = s.clock.day;
     if (isClosedToday(s)) {
       closeDayInPlace(s, pauses, true);
@@ -293,7 +321,8 @@ export function advanceTickInPlace(s: GameState): { pauses: PauseReason[]; anim:
   if (s.cash < 0 && !s.cashNegative) {
     s.cashNegative = true;
     pauses.push({ kind: 'cashNegative' });
-  } else if (s.cash >= 0) {
+  } else if (s.cash >= CASH_WARNING_RESET) {
+    // 0 근처를 오르내릴 때마다 멈추지 않도록, 넉넉히 회복해야 다시 경고한다.
     s.cashNegative = false;
   }
 

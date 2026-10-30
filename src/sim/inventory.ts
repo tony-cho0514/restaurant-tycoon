@@ -91,8 +91,8 @@ export function dailyUsageEstimate(recent: Usage[], id: IngredientId, fallback: 
   return last.reduce((s, u) => s + (u[id] ?? 0), 0) / last.length;
 }
 
-function room(inv: Inventory, id: IngredientId, dailyUsage: number): number {
-  return Math.max(0, INGREDIENTS[id].storageMaxDays * dailyUsage - stockOf(inv, id));
+function room(inv: Inventory, id: IngredientId, dailyUsage: number, storageMult = 1): number {
+  return Math.max(0, INGREDIENTS[id].storageMaxDays * dailyUsage * storageMult - stockOf(inv, id));
 }
 
 export function autoReorder(
@@ -101,6 +101,7 @@ export function autoReorder(
   usage: Record<IngredientId, number>,
   prices: Record<IngredientId, number>,
   today: number,
+  storageMult = 1,
 ): { inv: Inventory; spent: number; bought: Usage } {
   let next = inv;
   let spent = 0;
@@ -110,7 +111,7 @@ export function autoReorder(
     if (daily <= 0) continue;
     const stock = stockOf(next, id);
     if (stock >= rules[id].reorderDays * daily) continue;
-    const qty = Math.min(rules[id].targetDays * daily - stock, room(next, id, daily));
+    const qty = Math.min(rules[id].targetDays * daily - stock, room(next, id, daily, storageMult));
     if (qty <= EPS) continue;
     next = buy(next, id, qty, prices[id], today);
     spent += Math.round(qty * prices[id]);

@@ -30,9 +30,7 @@ export const INSURANCE_RATE = 0.09;
 export const HOLIDAY_PAY_RATE = 0.2;
 export const HOLIDAY_PAY_MIN_WEEKLY_HOURS = 15;
 export const START_MIN_WAGE = 10_030;
-export const STAFF_COUNT = 2;
 export const PIZZAS_PER_STAFF_HOUR = 7;
-export const OVEN_CAP_PER_HOUR = 16;
 
 /** 운영 수단 없이 평범하게 장사할 때 손님 만족도의 평균. 평점은 이 값 근처로 수렴한다. */
 export const SATISFACTION_BASE = 4.4;
