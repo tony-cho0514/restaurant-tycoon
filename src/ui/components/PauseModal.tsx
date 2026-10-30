@@ -12,7 +12,7 @@ function dayText(day: number, today: number): string {
   return d === 0 ? '오늘' : d === 1 ? '내일' : d === 2 ? '모레' : `${d}일 뒤`;
 }
 
-export type TabId = 'status' | 'sales' | 'menu' | 'inventory' | 'staff' | 'shop' | 'levers' | 'ledger' | 'messages';
+export type TabId = 'status' | 'sales' | 'menu' | 'inventory' | 'staff' | 'shop' | 'levers' | 'ledger' | 'messages' | 'learn';
 
 const MS_PER_CHARGE_TICK = 86_400_000 / CHARGE_TICKS_PER_REAL_DAY;
 
@@ -88,7 +88,7 @@ export function PauseModal({ reason, state, now, onDismiss, onGoto, onAccept = (
       </dl>
     );
     tone = profit >= 0 ? 'good' : 'bad';
-    extra = <button className="btn" onClick={() => { onGoto('ledger'); onDismiss({ resume: false }); }}>장부 보기</button>;
+    extra = <button className="btn" onClick={() => { onGoto('learn'); onDismiss({ resume: false }); }}>📚 부검 리포트 보기</button>;
   } else if (reason.kind === 'cashNegative') {
     title = '통장이 마이너스예요';
     icon = '💸';

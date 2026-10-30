@@ -77,6 +77,7 @@ const SENDER_ICON: Record<Sender, string> = {
   supplier: '🚚',
   news: '📰',
   owner: '🧑‍🍳',
+  book: '📚',
 };
 
 /** 메시지 보낸 쪽 그림: 리뷰는 배달앱·홀, 뉴스는 사건 종류마다 */
@@ -86,4 +87,4 @@ export function messageIcon(m: Pick<Message, 'from' | 'channel' | 'shockType'>):
   return SENDER_ICON[m.from];
 }
 
-export const TAB_ICON = { status: '📊', sales: '🧾', menu: '🍕', inventory: '📦', staff: '👥', shop: '🏪', levers: '🛠️', ledger: '📒', messages: '💬' } as const;
+export const TAB_ICON = { status: '📊', sales: '🧾', menu: '🍕', inventory: '📦', staff: '👥', shop: '🏪', levers: '🛠️', ledger: '📒', messages: '💬', learn: '📚' } as const;

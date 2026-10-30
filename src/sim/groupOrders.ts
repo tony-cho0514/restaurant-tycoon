@@ -5,6 +5,7 @@ import { canMake, consume, type Inventory } from './inventory';
 import type { IngredientId } from './ingredients';
 import { MENU, activePizzas, type PizzaId } from './menu';
 import type { NeighborhoodId } from './neighborhoods';
+import { notePaid } from './ledger';
 import { pushNews } from './news';
 import { addStress } from './owner';
 import type { Rng } from './rng';
@@ -108,6 +109,7 @@ function makeOne(s: GameState, menu: PizzaId): boolean {
   for (const [ing, qty] of Object.entries(recipe) as [IngredientId, number][]) {
     const r = consume(s.inventory, ing, qty);
     s.inventory = r.inv;
+    notePaid(s.today, ing, qty, r.cost);
     food += r.cost;
     if (ing === 'mozzarella' && s.levers.premiumCheese) {
       const extra = r.cost * (PREMIUM_CHEESE_MULT - 1);
@@ -155,6 +157,7 @@ function settleGroup(s: GameState, o: GroupOffer) {
   const amount = Math.round(made.reduce((a, i) => a + i.qty * s.menuPrices[i.menu], 0) * (1 - o.discount));
   if (ok > 0) {
     s.today.revenueDelivery += amount;
+    s.today.groupRevenue += amount;
     s.today.deliveryFees += DELIVERY_COST_TOTAL;
     s.today.groupOrders += 1;
     s.cash += amount - DELIVERY_COST_TOTAL;

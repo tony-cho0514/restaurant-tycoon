@@ -10,6 +10,7 @@ import { defaultUpgrades } from './upgrades';
 import { LEVER_IDS } from './levers';
 import { MENU } from './menu';
 import { NEIGHBORHOODS } from './neighborhoods';
+import { initialLearning } from './learning';
 import { initialMessages } from './messages';
 import { initialOwner } from './owner';
 import { advanceTickInPlace } from './tick';
@@ -72,7 +73,9 @@ function hasGameShape(x: unknown): x is GameState {
     obj(s.menuActive) && obj(s.menuDeveloped) && Array.isArray(s.staff) && Array.isArray(s.applicants) &&
     obj(s.upgrades) && Array.isArray(s.groupOffers) && Array.isArray(s.groupOrders) && num(s.nextStaffId) &&
     allNums(s.owner, ['stress', 'daysWithoutRest', 'awayFrom', 'awayUntil']) && Array.isArray((s.owner as Record<string, unknown>).log) &&
-    obj(s.messages) && Array.isArray(s.messages.items) && num(s.messages.nextId) && Array.isArray(s.messages.pending)
+    obj(s.messages) && Array.isArray(s.messages.items) && num(s.messages.nextId) && Array.isArray(s.messages.pending) &&
+    obj(s.learning) && Array.isArray(s.learning.reports) && Array.isArray(s.learning.shockReports) && obj(s.learning.dex) &&
+    Array.isArray(s.learning.decisions) && Array.isArray(s.learning.shocks)
   );
 }
 
@@ -123,6 +126,7 @@ function withExtras(x: Record<string, unknown>): Record<string, unknown> {
   } else if (!Array.isArray(out.messages.pending)) {
     out = { ...out, messages: { ...out.messages, pending: [] } };
   }
+  if (!obj(out.learning)) out = { ...out, learning: initialLearning() };
   return out;
 }
 

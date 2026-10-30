@@ -8,13 +8,14 @@ import { orderMix, expectedOrders, priceIndex } from './demand';
 import { rollWeather, stepEconomyWeek, type Weather } from './economy';
 import { INGREDIENT_IDS, ingredientPrice, type IngredientId } from './ingredients';
 import { autoReorder, canMake, consume, dailyUsageEstimate, expire, stockOf, type Usage } from './inventory';
-import { closeDay, closeMonth, emptyDay } from './ledger';
+import { closeDay, closeMonth, emptyDay, notePaid } from './ledger';
 import { MENU, activePizzas, type PizzaId } from './menu';
 import { NEIGHBORHOODS } from './neighborhoods';
 import { fallbackUsage } from './newGame';
 import { pruneOrders, type OrderRecord } from './orders';
 import { dailyLabor } from './labor';
 import { absenceMessages, dayEndMessage, fromNews, hourMessages, pushMessage, tiredMessage, type ReviewSeed } from './messages';
+import { dayEndLearning, monthEndLearning, startShock } from './learning';
 import { dayEndFollowUps, dueCoupons, settleCoupons } from './replies';
 import { announceMinWage, applyMinWage, dailyFlavor, demandShock, fireDue, planWeek, shockMultiplier, type NewsItem } from './news';
 import { satisfaction, updateRating, type Channel } from './ratings';
@@ -176,6 +177,7 @@ function serveOrders(s: GameState, rng: Rng, anim: AnimEvents) {
     for (const [id, qty] of Object.entries(recipe) as [IngredientId, number][]) {
       const r = consume(s.inventory, id, qty);
       s.inventory = r.inv;
+      notePaid(s.today, id, qty, r.cost);
       food += r.cost;
       if (id === 'mozzarella' && s.levers.premiumCheese) {
         const surcharge = r.cost * (PREMIUM_CHEESE_MULT - 1);
@@ -190,6 +192,7 @@ function serveOrders(s: GameState, rng: Rng, anim: AnimEvents) {
       if (stockOf(s.inventory, 'cola') >= 1) {
         const r = consume(s.inventory, 'cola', 1);
         s.inventory = r.inv;
+        notePaid(s.today, 'cola', 1, r.cost);
         food += r.cost;
         revenue += s.menuPrices.cola;
         items.push({ menu: 'cola', qty: 1 });
@@ -216,6 +219,7 @@ function serveOrders(s: GameState, rng: Rng, anim: AnimEvents) {
         if (stockOf(s.inventory, 'cola500') >= 1) {
           const r = consume(s.inventory, 'cola500', 1);
           s.inventory = r.inv;
+          notePaid(s.today, 'cola500', 1, r.cost);
           s.today.serviceCost += r.cost;
           gaveCola = true;
         }
@@ -328,8 +332,10 @@ function closeDayInPlace(s: GameState, pauses: PauseReason[], closed: boolean) {
   dayEndFollowUps(s);
   s.ledger = closeDay(s.ledger, s.today);
   s.orders = pruneOrders(s.orders, s.clock.day);
+  dayEndLearning(s);
   if (cal.dayOfMonth === 27) {
     s.ledger = closeMonth(s.ledger, cal.monthIndex);
+    monthEndLearning(s, cal.monthIndex);
     pauses.push({ kind: 'monthEnd', monthIndex: cal.monthIndex });
   }
 }
@@ -397,6 +403,7 @@ export function advanceTickInPlace(s: GameState): { pauses: PauseReason[]; anim:
   for (const item of s.news.items) {
     if (!isNew(item.id)) continue;
     pushMessage(s, fromNews(item, s.clock.hour));
+    startShock(s, item);
     if (pausesFor(item)) pauses.push({ kind: 'news', newsId: item.id });
   }
   if (wentNegative) pauses.push({ kind: 'cashNegative' });

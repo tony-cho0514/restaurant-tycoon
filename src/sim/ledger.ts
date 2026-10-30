@@ -9,6 +9,8 @@ export interface DayRecord {
   deliveryOrders: number;
   /** 단체 주문 건수 */
   groupOrders: number;
+  /** 단체 주문 매출(배달 매출에 들어 있는 몫) */
+  groupRevenue: number;
   lostOrders: number;
   stockoutOrders: number;
   revenueHall: number;
@@ -31,9 +33,12 @@ export interface DayRecord {
   usage: Usage;
   /** 그날 개점 시세(7일 전 대비 표시용) */
   prices: Partial<Record<IngredientId, number>>;
+  /** 실제로 써서 만든 재료 양과 그 재료를 산 값(부검 리포트의 재료 시세 몫). 옛 저장엔 없다. */
+  used?: Usage;
+  paid?: Partial<Record<IngredientId, number>>;
 }
 
-export type MonthRecord = Omit<DayRecord, 'day' | 'usage' | 'prices'>;
+export type MonthRecord = Omit<DayRecord, 'day' | 'usage' | 'prices' | 'used' | 'paid'>;
 
 export interface Ledger {
   days: DayRecord[];
@@ -43,20 +48,22 @@ export interface Ledger {
 export const DAYS_KEEP = 112;
 
 export const NUMERIC_KEYS = [
-  'hallOrders', 'deliveryOrders', 'groupOrders', 'lostOrders', 'stockoutOrders', 'revenueHall', 'revenueDelivery', 'foodCost',
+  'hallOrders', 'deliveryOrders', 'groupOrders', 'groupRevenue', 'lostOrders', 'stockoutOrders', 'revenueHall', 'revenueDelivery', 'foodCost',
   'serviceCost', 'wasteCost', 'labor', 'rent', 'appFees', 'cardFees', 'deliveryFees', 'utilities', 'ads', 'investment', 'purchases', 'ownerDraw',
 ] as const;
 
 export function emptyDay(day: number, monthIndex: number): DayRecord {
   return {
     day, monthIndex,
-    hallOrders: 0, deliveryOrders: 0, groupOrders: 0, lostOrders: 0, stockoutOrders: 0,
+    hallOrders: 0, deliveryOrders: 0, groupOrders: 0, groupRevenue: 0, lostOrders: 0, stockoutOrders: 0,
     revenueHall: 0, revenueDelivery: 0,
     foodCost: 0, serviceCost: 0, wasteCost: 0, labor: 0, rent: 0, appFees: 0, cardFees: 0, deliveryFees: 0, utilities: 0, ads: 0, investment: 0,
     purchases: 0,
     ownerDraw: 0,
     usage: {},
     prices: {},
+    used: {},
+    paid: {},
   };
 }
 
@@ -65,12 +72,20 @@ export function closeDay(l: Ledger, rec: DayRecord): Ledger {
 }
 
 export function closeMonth(l: Ledger, monthIndex: number): Ledger {
-  const { day: _d, usage: _u, prices: _p, ...month } = emptyDay(0, monthIndex);
+  const { day: _d, usage: _u, prices: _p, used: _us, paid: _pa, ...month } = emptyDay(0, monthIndex);
   for (const d of l.days) {
     if (d.monthIndex !== monthIndex) continue;
     for (const k of NUMERIC_KEYS) month[k] += Number.isFinite(d[k]) ? d[k] : 0;
   }
   return { ...l, months: [...l.months, month] };
+}
+
+/** 재료를 실제로 써서 만들 때: 쓴 양과 그 재료를 산 값을 그날 기록에 더한다. */
+export function notePaid(rec: DayRecord, id: IngredientId, qty: number, cost: number): void {
+  const used = (rec.used ??= {});
+  const paid = (rec.paid ??= {});
+  used[id] = (used[id] ?? 0) + qty;
+  paid[id] = (paid[id] ?? 0) + cost;
 }
 
 export function profitOf(r: DayRecord | MonthRecord): number {

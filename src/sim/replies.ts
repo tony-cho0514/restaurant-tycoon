@@ -244,7 +244,7 @@ export function settleCoupons(s: GameState, coupons: FollowUp[], seeds: ReviewSe
     const stars = starsOf(sat);
     const rng = messageRng(s, 7);
     const pool = stars >= 4 ? FOLLOWUP_TEXT.couponGood : stars === 3 ? FOLLOWUP_TEXT.couponMeh : FOLLOWUP_TEXT.couponBad;
-    pushMessage(s, { from: 'review', channel: c.channel, name: c.name, stars, text: rng.pick(pool), detail: `쿠폰 ${won(COUPON_VALUE)}을 쓰고 다시 주문했어요.`, tone: stars >= 4 ? 'good' : stars <= 2 ? 'bad' : 'neutral' });
+    pushMessage(s, { from: 'review', channel: c.channel, name: c.name, stars, text: rng.pick(pool), detail: `쿠폰 ${won(COUPON_VALUE)}을 쓰고 다시 주문했어요.`, tone: stars >= 4 ? 'good' : stars <= 2 ? 'bad' : 'neutral', key: 'coupon-back' });
   }
   s.messages = { ...s.messages, pending: s.messages.pending.filter((f) => !coupons.includes(f)) };
 }
@@ -262,10 +262,10 @@ export function dayEndFollowUps(s: GameState): void {
     }
     if (s.menuActive[f.menu]) {
       bump(s, f.channel, PROMISE_RATING_UP);
-      pushMessage(s, { from: 'review', channel: f.channel, name: f.name, stars: 5, text: fill(rng.pick(FOLLOWUP_TEXT.promiseKept), { menu: pizzaName(f.menu) }), detail: '약속을 지켜 단골이 됐어요. 평점이 조금 올랐어요.', tone: 'good', important: true });
+      pushMessage(s, { from: 'review', channel: f.channel, name: f.name, stars: 5, text: fill(rng.pick(FOLLOWUP_TEXT.promiseKept), { menu: pizzaName(f.menu) }), detail: '약속을 지켜 단골이 됐어요. 평점이 조금 올랐어요.', tone: 'good', important: true, key: 'promise-kept' });
     } else if (day >= f.dueDay) {
       bump(s, f.channel, -PROMISE_RATING_DOWN);
-      pushMessage(s, { from: 'review', channel: f.channel, name: f.name, stars: 2, text: fill(rng.pick(FOLLOWUP_TEXT.promiseBroken), { menu: pizzaName(f.menu) }), detail: '약속한 메뉴를 기한 안에 못 만들었어요. 평점이 깎였어요.', tone: 'bad', important: true, action: 'menu' });
+      pushMessage(s, { from: 'review', channel: f.channel, name: f.name, stars: 2, text: fill(rng.pick(FOLLOWUP_TEXT.promiseBroken), { menu: pizzaName(f.menu) }), detail: '약속한 메뉴를 기한 안에 못 만들었어요. 평점이 깎였어요.', tone: 'bad', important: true, action: 'menu', key: 'promise-broken' });
     } else {
       keep.push(f);
     }

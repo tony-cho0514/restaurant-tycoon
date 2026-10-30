@@ -14,6 +14,7 @@ import { usePlayback } from '../hooks/usePlayback';
 import { TAB_ICON } from '../icons';
 import type { PanelProps } from '../panels/common';
 import { InventoryPanel } from '../panels/InventoryPanel';
+import { LearnPanel } from '../panels/LearnPanel';
 import { LedgerPanel } from '../panels/LedgerPanel';
 import { LeversPanel } from '../panels/LeversPanel';
 import { MenuPanel } from '../panels/MenuPanel';
@@ -33,6 +34,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'levers', label: '운영 수단' },
   { id: 'ledger', label: '장부' },
   { id: 'messages', label: '메시지' },
+  { id: 'learn', label: '배움' },
 ];
 
 function ActivePanel({ tab, onGoto, focusId, ...p }: PanelProps & { tab: TabId; onGoto: (tab: TabId) => void; focusId: number | null }) {
@@ -46,6 +48,7 @@ function ActivePanel({ tab, onGoto, focusId, ...p }: PanelProps & { tab: TabId; 
     case 'sales': return <SalesPanel {...p} />;
     case 'staff': return <StaffPanel {...p} />;
     case 'shop': return <ShopPanel {...p} />;
+    case 'learn': return <LearnPanel {...p} />;
   }
 }
 

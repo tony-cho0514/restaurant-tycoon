@@ -4,6 +4,7 @@ import { initialEconomy } from './economy';
 import { INGREDIENT_IDS, ingredientPrice, type IngredientId } from './ingredients';
 import { DEFAULT_RULES, autoReorder, emptyInventory } from './inventory';
 import { emptyDay } from './ledger';
+import { initialLearning } from './learning';
 import { initialMessages } from './messages';
 import { MENU, activePizzas, defaultMenuActive, type MenuActive, type MenuItemId } from './menu';
 import { initialOwner } from './owner';
@@ -86,5 +87,6 @@ export function createNewGame(o: { seed: number; neighborhoodId: NeighborhoodId;
     nextStaffId: 2,
     owner: initialOwner({ hall: 4.5, delivery: 4.5 }),
     messages: initialMessages(news.items, true),
+    learning: initialLearning(),
   };
 }

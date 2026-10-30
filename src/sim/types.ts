@@ -7,6 +7,7 @@ import type { Levers } from './levers';
 import type { MenuItemId } from './menu';
 import type { NeighborhoodId } from './neighborhoods';
 import type { NewsState } from './news';
+import type { LearningState } from './learning';
 import type { MessageState } from './messages';
 import type { OwnerState } from './owner';
 import type { OrderRecord } from './orders';
@@ -64,6 +65,8 @@ export interface GameState {
   owner: OwnerState;
   /** 사이드 메시지: 리뷰·요청·알바 카톡·거래처·사장님 혼잣말 */
   messages: MessageState;
+  /** 배움: 월말 부검 리포트, 위기 리포트, 도감, 내가 바꾼 결정 */
+  learning: LearningState;
 }
 
 export interface Settings {

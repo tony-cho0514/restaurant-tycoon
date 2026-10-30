@@ -15,13 +15,13 @@ const FILTERS: { id: Filter; label: string; match: (m: Message, s: GameState) =>
   { id: 'reply', label: '답장', match: (m, s) => canReply(s, m) && m.reply?.id !== 'auto' },
   { id: 'customer', label: '손님', match: (m) => (['review', 'request', 'group'] as Sender[]).includes(m.from) },
   { id: 'staff', label: '직원', match: (m) => m.from === 'staff' },
-  { id: 'news', label: '거래처·소식', match: (m) => m.from === 'supplier' || m.from === 'news' },
+  { id: 'news', label: '거래처·소식', match: (m) => m.from === 'supplier' || m.from === 'news' || m.from === 'book' },
   { id: 'owner', label: '나', match: (m) => m.from === 'owner' },
   { id: 'important', label: '중요', match: (m) => !!m.important },
 ];
 
 const ACTION_LABEL: Record<MessageAction, string> = {
-  menu: '메뉴 보기', inventory: '재고 보기', levers: '운영 수단 보기', shop: '가게 보기', staff: '직원 보기', ledger: '장부 보기',
+  menu: '메뉴 보기', inventory: '재고 보기', levers: '운영 수단 보기', shop: '가게 보기', staff: '직원 보기', ledger: '장부 보기', learn: '배움 탭 보기',
 };
 
 const dayText = (day: number) => formatClock({ day, hour: 0 }).replace(/ \d+시$/, '');

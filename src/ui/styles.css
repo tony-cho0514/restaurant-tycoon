@@ -367,3 +367,32 @@ body { touch-action: manipulation; padding: env(safe-area-inset-top) env(safe-ar
 .reply-btn:disabled { opacity: 0.55; }
 .reply-cost { font-size: 13px; color: var(--ink-soft); font-weight: 400; }
 .toast-tag { padding: 0 6px; border-radius: 8px; background: var(--tomato); color: #fff; font-size: 11px; }
+/* 배움: 부검 리포트, 도감 */
+.report { display: flex; flex-direction: column; gap: 8px; }
+.report-title { font-size: 17px; margin: 4px 0 0; }
+.report-hint { margin: 0; padding: 8px 12px; border-radius: 10px; background: #f6efd9; font-size: 14px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.report-hint p { margin: 0; }
+.parts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.part { display: flex; flex-direction: column; gap: 3px; }
+.part-head { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
+.part-head b { font-variant-numeric: tabular-nums; }
+.part.down .part-head b { color: var(--bad); }
+.part.up .part-head b { color: var(--good); }
+.part-bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.part-bar span { display: block; height: 100%; border-radius: 4px; background: var(--good); }
+.part.down .part-bar span { background: var(--bad); }
+.report-lost { margin: 0; font-size: 14px; color: var(--ink-soft); }
+.kpi { width: 100%; border-collapse: collapse; font-size: 14px; }
+.kpi th, .kpi td { padding: 6px 4px; border-bottom: 1px solid var(--line); text-align: right; font-variant-numeric: tabular-nums; }
+.kpi th[scope='row'] { text-align: left; font-weight: 400; color: var(--ink-soft); }
+.report-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.report-list li { padding: 6px 10px; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+.report-list li.tone-bad { border-left: 4px solid var(--bad); }
+.report-list li.tone-good { border-left: 4px solid var(--gold); }
+.dex { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.dex-card { padding: 10px 12px; background: #fff; border: 1px solid var(--line); border-radius: 12px; display: flex; flex-direction: column; gap: 6px; }
+.dex-card.locked { background: var(--cream); opacity: 0.75; }
+.dex-head { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.dex-head span:first-child { font-size: 20px; }
+.dex-story { margin: 0; font-size: 14px; padding: 6px 8px; background: #eef4de; border-radius: 8px; }
+.dex-text { margin: 0; font-size: 14px; color: var(--ink-soft); }
