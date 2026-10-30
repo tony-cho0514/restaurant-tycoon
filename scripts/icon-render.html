@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>html,body{margin:0;width:1024px;height:1024px;overflow:hidden;background:#f6e7c8}</style>
+</head>
+<body>
+<canvas id="c" width="1024" height="1024"></canvas>
+<script type="module">
+// 앱 아이콘 원본 만들기: 이 파일을 public/__icon.html로 잠시 복사하고 npm run dev 상태에서
+// msedge --headless=new --use-angle=swiftshader --enable-unsafe-swiftshader --window-size=1024,1024 --virtual-time-budget=10000 --screenshot=icon-src.png http://localhost:5173/__icon.html
+// 로 찍은 뒤 sharp로 512·192·180·64px을 만든다. 모형은 Kenney(CC0) 피자.
+import * as THREE from '/node_modules/.vite/deps/three.js';
+import { GLTFLoader } from '/node_modules/.vite/deps/three_examples_jsm_loaders_GLTFLoader__js.js';
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, preserveDrawingBuffer: true });
+renderer.setSize(1024, 1024, false);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+const scene = new THREE.Scene();
+// 토마토 빨강 → 살짝 밝은 가운데 그라데이션 배경
+const bg = document.createElement('canvas'); bg.width = bg.height = 512;
+const g = bg.getContext('2d');
+const grad = g.createRadialGradient(256, 220, 40, 256, 256, 360);
+grad.addColorStop(0, '#fff8ea'); grad.addColorStop(1, '#f2d9ae');
+g.fillStyle = grad; g.fillRect(0, 0, 512, 512);
+const tex = new THREE.CanvasTexture(bg); tex.colorSpace = THREE.SRGBColorSpace;
+scene.background = tex;
+const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+camera.position.set(0, 2.45, 1.25);
+camera.lookAt(0, -0.02, 0);
+scene.add(new THREE.HemisphereLight(0xfff4e0, 0x7a3a20, 1.6));
+const sun = new THREE.DirectionalLight(0xffffff, 2.2);
+sun.position.set(1.5, 4, 2.5); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+scene.add(sun);
+const ground = new THREE.Mesh(new THREE.CircleGeometry(1.2, 64), new THREE.ShadowMaterial({ opacity: 0.25 }));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+new GLTFLoader().load('/models/food/pizza.glb', (gltf) => {
+  const pizza = gltf.scene;
+  pizza.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  const box = new THREE.Box3().setFromObject(pizza);
+  const size = box.getSize(new THREE.Vector3());
+  const k = 1.08 / Math.max(size.x, size.z);
+  pizza.scale.setScalar(k);
+  const b2 = new THREE.Box3().setFromObject(pizza);
+  const c = b2.getCenter(new THREE.Vector3());
+  pizza.position.set(-c.x, -b2.min.y + 0.02, -c.z);
+  pizza.rotation.y = 0.35;
+  scene.add(pizza);
+  renderer.render(scene, camera);
+  document.title = 'done';
+});
+</script>
+</body>
+</html>
