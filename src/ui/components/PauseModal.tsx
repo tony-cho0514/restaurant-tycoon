@@ -5,7 +5,7 @@ import type { GameState } from '../../sim/types';
 import { won } from '../format';
 import { newsIcon } from '../icons';
 
-export type TabId = 'status' | 'news' | 'menu' | 'inventory' | 'levers' | 'ledger';
+export type TabId = 'status' | 'sales' | 'menu' | 'inventory' | 'staff' | 'shop' | 'levers' | 'ledger' | 'news';
 
 const MS_PER_CHARGE_TICK = 86_400_000 / CHARGE_TICKS_PER_REAL_DAY;
 

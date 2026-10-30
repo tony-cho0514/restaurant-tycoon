@@ -59,4 +59,4 @@ export function newsIcon(n: Pick<NewsItem, 'kind'> & { shockType?: ShockType }):
   return '📰';
 }
 
-export const TAB_ICON = { status: '📊', news: '📰', menu: '🍕', inventory: '📦', levers: '🛠️', ledger: '📒' } as const;
+export const TAB_ICON = { status: '📊', sales: '🧾', menu: '🍕', inventory: '📦', staff: '👥', shop: '🏪', levers: '🛠️', ledger: '📒', news: '📰' } as const;

@@ -12,6 +12,7 @@ const ROWS: { key: keyof MonthRecord; label: string; sign: 1 | -1 }[] = [
   { key: 'labor', label: '인건비', sign: -1 },
   { key: 'rent', label: '월세', sign: -1 },
   { key: 'appFees', label: '배달앱 수수료', sign: -1 },
+  { key: 'cardFees', label: '카드 수수료', sign: -1 },
   { key: 'deliveryFees', label: '배달비', sign: -1 },
   { key: 'utilities', label: '공과금', sign: -1 },
   { key: 'ads', label: '광고비', sign: -1 },

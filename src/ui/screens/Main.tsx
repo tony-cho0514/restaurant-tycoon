@@ -13,15 +13,21 @@ import { LedgerPanel } from '../panels/LedgerPanel';
 import { LeversPanel } from '../panels/LeversPanel';
 import { MenuPanel } from '../panels/MenuPanel';
 import { NewsPanel } from '../panels/NewsPanel';
+import { SalesPanel } from '../panels/SalesPanel';
+import { ShopPanel } from '../panels/ShopPanel';
+import { StaffPanel } from '../panels/StaffPanel';
 import { StatusPanel } from '../panels/StatusPanel';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'status', label: '현황' },
-  { id: 'news', label: '뉴스' },
-  { id: 'menu', label: '메뉴·가격' },
-  { id: 'inventory', label: '재고·발주' },
+  { id: 'sales', label: '매출·주문' },
+  { id: 'menu', label: '메뉴' },
+  { id: 'inventory', label: '재고' },
+  { id: 'staff', label: '직원' },
+  { id: 'shop', label: '가게' },
   { id: 'levers', label: '운영 수단' },
   { id: 'ledger', label: '장부' },
+  { id: 'news', label: '뉴스' },
 ];
 
 function ActivePanel({ tab, ...p }: PanelProps & { tab: TabId }) {
@@ -32,6 +38,9 @@ function ActivePanel({ tab, ...p }: PanelProps & { tab: TabId }) {
     case 'inventory': return <InventoryPanel {...p} />;
     case 'levers': return <LeversPanel {...p} />;
     case 'ledger': return <LedgerPanel {...p} />;
+    case 'sales': return <SalesPanel {...p} />;
+    case 'staff': return <StaffPanel {...p} />;
+    case 'shop': return <ShopPanel {...p} />;
   }
 }
 

@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { previewMenuPrice } from '../../sim/levers';
-import { MENU, clampMenuPrice, unitCost, type MenuItemId } from '../../sim/menu';
+import { MISC_COST_PER_PIZZA } from '../../sim/balance';
+import { INGREDIENTS } from '../../sim/ingredients';
+import { MENU, clampMenuPrice, recipeLines, unitCost, type MenuItemId } from '../../sim/menu';
 import { pct, won } from '../format';
-import { MENU_ICON, PIZZA_ICON } from '../icons';
+import { INGREDIENT_ICON, MENU_ICON, PIZZA_ICON } from '../icons';
 import { marginCtx, type PanelProps } from './common';
 
 const IDS = Object.keys(MENU) as MenuItemId[];
 
 export function MenuPanel({ state, update }: PanelProps) {
   const [draft, setDraft] = useState<Record<MenuItemId, number>>(state.menuPrices);
+  const [openRecipe, setOpenRecipe] = useState<MenuItemId | null>(null);
   const changed = IDS.filter((id) => draft[id] !== state.menuPrices[id]);
   const ctx = marginCtx(state);
   const step = (id: MenuItemId, delta: number) => setDraft((d) => ({ ...d, [id]: clampMenuPrice(d[id] + delta) }));
@@ -27,6 +30,19 @@ export function MenuPanel({ state, update }: PanelProps) {
               <div className="row-main">
                 <strong>{def.name}</strong>
                 <span className="sub">원가 {won(cost)} · 원가율 {pct(cost / state.menuPrices[id])} · {def.isPizza ? '한 판' : '한 병'} 이익 {won(state.menuPrices[id] - cost)}</span>
+                <button className="link-btn" aria-label={`${def.name} 재료 보기`} aria-expanded={openRecipe === id} onClick={() => setOpenRecipe(openRecipe === id ? null : id)}>
+                  {openRecipe === id ? '재료 접기 ▲' : '재료 보기 ▼'}
+                </button>
+                {openRecipe === id && (
+                  <ul className="recipe">
+                    {recipeLines(id, state.prices, state.levers.premiumCheese).map((l) => {
+                      const ing = INGREDIENTS[l.ingredient];
+                      const amount = ing.unit === 'kg' ? `${Math.round(l.qty * 1000)}g` : `${l.qty}${ing.unit}`;
+                      return <li key={l.ingredient}><span aria-hidden="true">{INGREDIENT_ICON[l.ingredient]}</span> {ing.name} {amount} <b>{won(l.cost)}</b></li>;
+                    })}
+                    {def.isPizza && <li><span aria-hidden="true">🫒</span> 기타(올리브유·피클·소스) <b>{won(MISC_COST_PER_PIZZA)}</b></li>}
+                  </ul>
+                )}
               </div>
               <div className="stepper">
                 <button className="btn" aria-label={`${def.name} 500원 내리기`} onClick={() => step(id, -500)}>−</button>

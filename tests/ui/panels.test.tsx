@@ -36,10 +36,11 @@ test('운영 수단을 확정하면 켜진다', () => {
 });
 
 test('미리 사기는 현금을 줄이고 상한이면 안내', () => {
-  let s = g(); const cash0 = s.cash; const update = (fn: Fn) => { s = fn(s); };
+  let s = g(); const cash0 = s.cash; const update = (fn: any) => { s = fn(s); };
   render(<InventoryPanel state={s} update={update} />);
-  fireEvent.click(screen.getByRole('button', { name: '모짜렐라 치즈 60일치 미리 사기' }));
-  expect(screen.getByText(/창고가 꽉 차서/)).toBeTruthy(); fireEvent.click(screen.getByRole('button', { name: '구매 확정' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: '모짜렐라 치즈 선택' }));
+  for (let i = 0; i < 3; i++) fireEvent.click(screen.getByRole('button', { name: '모짜렐라 치즈 수량 늘리기' }));
+  expect(screen.getByText(/창고가 꽉 차서/)).toBeTruthy(); fireEvent.click(screen.getByRole('button', { name: '한 번에 발주' }));
   expect(s.cash).toBeLessThan(cash0);
 });
 
