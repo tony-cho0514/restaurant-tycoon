@@ -54,7 +54,8 @@ export function CatchUpModal({ view, state, onRun, onClose, onGoto }: {
         <dl className="facts">
           <div><dt>주문</dt><dd>{v.orders}건</dd></div>
           <div><dt>매출</dt><dd>{won(v.revenue)}</dd></div>
-          <div><dt>장부 이익</dt><dd className={v.profit < 0 ? 'neg' : ''}>{signed(v.profit)}</dd></div>
+          <div><dt>{v.branchProfit !== undefined ? '1호점 장부 이익' : '장부 이익'}</dt><dd className={v.profit < 0 ? 'neg' : ''}>{signed(v.profit)}</dd></div>
+          {v.branchProfit !== undefined && <div><dt>2호점 이익</dt><dd className={v.branchProfit < 0 ? 'neg' : ''}>{signed(v.branchProfit)}</dd></div>}
           <div><dt>통장</dt><dd>{won(v.cashBefore)} → {won(v.cashAfter)}</dd></div>
           <div><dt>홀 평점</dt><dd>{rating(v.ratingBefore.hall, v.ratingAfter.hall)}</dd></div>
           <div><dt>배달앱 평점</dt><dd>{rating(v.ratingBefore.delivery, v.ratingAfter.delivery)}</dd></div>

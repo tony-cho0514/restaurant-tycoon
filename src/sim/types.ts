@@ -11,6 +11,7 @@ import type { LearningState } from './learning';
 import type { LocalState } from './localEvents';
 import type { GuideState } from './guide';
 import type { BankState, ClosedShop } from './bank';
+import type { BranchState } from './branch';
 import type { MessageState } from './messages';
 import type { OwnerState } from './owner';
 import type { OrderRecord } from './orders';
@@ -78,6 +79,8 @@ export interface GameState {
   bank: BankState;
   /** 문을 닫은 가게(폐업 부검을 보여 주고 새 가게로) */
   closed?: ClosedShop | null;
+  /** 매니저가 맡은 2호점(배달 전문) */
+  branch?: BranchState | null;
 }
 
 export interface Settings {

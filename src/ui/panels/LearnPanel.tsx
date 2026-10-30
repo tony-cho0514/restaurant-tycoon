@@ -4,6 +4,7 @@ import { loadMonthStart } from '../monthSnapshots';
 import { CARDS, CARD_IDS } from '../../content/dexCards';
 import type { MonthReport } from '../../sim/learning';
 import type { YearReport } from '../../sim/yearEnd';
+import { managerReview } from '../../sim/branch';
 import type { TabKey } from '../../sim/guide';
 import type { Kpi, PartKey, ReportPart } from '../../sim/report';
 import { calendar } from '../../sim/time';
@@ -217,6 +218,16 @@ function Reports({ state, onGoto }: { state: GameState; onGoto?: (t: TabKey) => 
       )}
       {years.length > 0 && <YearCard y={years[years.length - 1]} />}
       {r && <ReportView r={r} onGoto={onGoto} createdAt={state.createdAt} />}
+      {r && state.branch && (() => {
+        const bm = state.branch.months.find((x) => x.monthIndex === r.monthIndex);
+        return bm ? (
+          <article className="report branch-report" aria-label="2호점 리포트">
+            <h4 className="report-title">🏬 2호점 {r.label.replace(/^\d+년차 /, '')} 이익 <span className={bm.profit < 0 ? 'neg' : ''}>{manwon(bm.profit)}</span></h4>
+            <p className="sub">주문 {bm.orders}건 · 매출 {manwon(bm.revenue)} · 인건비 {manwon(bm.labor)} · 재료비 {manwon(bm.food)}</p>
+            <p>{managerReview(state.branch, bm)}</p>
+          </article>
+        ) : null;
+      })()}
       {shocks.length > 0 && (
         <>
           <h4>🌪️ 위기·기회 리포트</h4>

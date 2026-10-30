@@ -70,6 +70,37 @@ function LoanCard({ state, update }: PanelProps) {
   );
 }
 
+/** 2호점 장부: 이번 달(오늘까지)과 지난달 */
+function BranchLedger({ state }: { state: PanelProps['state'] }) {
+  const b = state.branch;
+  if (!b) return null;
+  const monthIndex = calendar(state.clock).monthIndex;
+  const days = b.days.filter((d) => d.monthIndex === monthIndex);
+  const sum = (k: 'revenue' | 'food' | 'fees' | 'labor' | 'rent' | 'other' | 'profit' | 'orders') => days.reduce((a, d) => a + d[k], 0);
+  const last = b.months.at(-1);
+  const rows: [string, number, number | undefined][] = [
+    ['매출', sum('revenue'), last?.revenue],
+    ['재료비', -sum('food'), last && -last.food],
+    ['수수료·배달비', -sum('fees'), last && -last.fees],
+    ['인건비(매니저·알바)', -sum('labor'), last && -last.labor],
+    ['월세·창업 대출 이자', -sum('rent'), last && -last.rent],
+    ['공과금·광고·서비스', -sum('other'), last && -last.other],
+  ];
+  return (
+    <section className="card branch-ledger" aria-label="2호점 장부">
+      <h4>🏬 2호점 장부 <span className="sub">(통장은 1호점과 함께 써요)</span></h4>
+      <table className="ledger">
+        <thead><tr><th /><th>이번 달(오늘까지)</th>{last && <th>지난달</th>}</tr></thead>
+        <tbody>
+          {rows.map(([label, cur, prev]) => <tr key={label}><th>{label}</th><td>{won(cur || 0)}</td>{last && <td>{won(prev || 0)}</td>}</tr>)}
+          <tr className="total"><th>이익</th><td className={sum('profit') < 0 ? 'neg' : ''}>{won(sum('profit'))}</td>{last && <td className={last.profit < 0 ? 'neg' : ''}>{won(last.profit)}</td>}</tr>
+        </tbody>
+      </table>
+      <p className="sub">이번 달 주문 {sum('orders')}건{last ? ` · 지난달 ${last.orders}건` : ''}</p>
+    </section>
+  );
+}
+
 export function LedgerPanel({ state, update }: PanelProps) {
   const cal = calendar(state.clock);
   const current = monthToDate(state);
@@ -108,6 +139,7 @@ export function LedgerPanel({ state, update }: PanelProps) {
           </tr>
         </tbody>
       </table>
+      <BranchLedger state={state} />
       <p className="note">장부상 이익과 통장 잔고는 달라요. 재료를 미리 사면 돈은 먼저 나가지만, 비용은 쓸 때 잡혀요.</p>
     </div>
   );

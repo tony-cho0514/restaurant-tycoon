@@ -22,6 +22,7 @@ import { currentRent, leaseMorning } from './lease';
 import { distressEvening, payLoanInPlace } from './bank';
 import { yearEndReport } from './yearEnd';
 import { regularsEvening } from './regulars';
+import { branchEvening, branchMonthEnd, branchShare } from './branch';
 import { MONSOON_DELIVERY_DELAY, inMonsoon, localDemand, localEvening, localEventsIn, localMorning, monsoonRain, planLocalWeek } from './localEvents';
 import { dayEndFollowUps, dueCoupons, settleCoupons } from './replies';
 import { announceMinWage, applyMinWage, dailyFlavor, demandShock, fireDue, planWeek, shockMultiplier, type NewsItem } from './news';
@@ -145,7 +146,7 @@ function serveOrders(s: GameState, rng: Rng, anim: AnimEvents) {
   const cal = calendar(s.clock);
   const exp = expectedOrders({
     n, hour: s.clock.hour, isWeekend: cal.isWeekend, economy: s.economy, menuPrices: s.menuPrices,
-    ratings: s.ratings, levers: s.levers, shock: combine(demandShock(s.news.active, s.clock.day), localDemand(s, s.clock.day)),
+    ratings: s.ratings, levers: s.levers, shock: combine(combine(demandShock(s.news.active, s.clock.day), localDemand(s, s.clock.day)), branchShare(s)),
     deliveryTip: s.settings.deliveryTip,
     active: s.menuActive,
   });
@@ -354,12 +355,14 @@ function closeDayInPlace(s: GameState, pauses: PauseReason[], closed: boolean) {
   s.orders = pruneOrders(s.orders, s.clock.day);
   dayEndLearning(s);
   localEvening(s);
+  branchEvening(s, ownerAway(s) && s.owner.awayReason === 'branch');
   const distress = distressEvening(s);
   if (distress) pauses.push({ kind: distress === 'warn' ? 'distress' : 'closed' });
   if (cal.dayOfMonth === 27) {
     s.ledger = closeMonth(s.ledger, cal.monthIndex);
     const from = cal.monthIndex * 28;
     monthEndLearning(s, cal.monthIndex, localEventsIn(s, from, from + 27));
+    branchMonthEnd(s, cal.monthIndex);
     const year = yearEndReport(s, cal.monthIndex);
     if (year) {
       s.learning = { ...s.learning, years: [...(s.learning.years ?? []), year] };

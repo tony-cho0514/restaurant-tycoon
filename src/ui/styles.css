@@ -470,3 +470,17 @@ body { touch-action: manipulation; padding: env(safe-area-inset-top) env(safe-ar
 .whatif h4 { margin: 0; }
 .whatif-options { display: flex; flex-wrap: wrap; gap: 6px; }
 .whatif-result { margin: 0; font-size: 15px; }
+
+/* 2호점 */
+.checklist { list-style: none; margin: 4px 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.branch-open, .branch-card { display: flex; flex-direction: column; gap: 6px; margin: 6px 0; }
+.branch-open h5 { margin: 6px 0 0; font-size: 14px; }
+.choice-list { display: flex; flex-direction: column; gap: 6px; }
+.btn.choice { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; white-space: normal; }
+.btn.choice[aria-pressed='true'] { outline: 3px solid var(--tomato); }
+.branch-card p { margin: 0; }
+.stress-bar.inline { display: inline-block; width: 80px; vertical-align: middle; }
+.branch-rules { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; }
+.setting-row.toggle { gap: 8px; }
+.branch-ledger { margin-top: 10px; }
+.branch-report { border: 1px dashed var(--olive); border-radius: 12px; padding: 8px 12px; margin-top: 8px; }

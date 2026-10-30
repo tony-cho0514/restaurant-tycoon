@@ -11,7 +11,7 @@ import type { GameState } from './types';
 
 export { STRESS_BURNOUT, STRESS_GOOD, STRESS_TIRED, VACATION_COST, VACATION_DAYS };
 
-export type AwayReason = 'dayOff' | 'vacation' | 'burnout';
+export type AwayReason = 'dayOff' | 'vacation' | 'burnout' | 'branch';
 
 export interface OwnerState {
   stress: number;
@@ -31,7 +31,9 @@ export interface OwnerState {
   log: { reason: string; delta: number }[];
 }
 
-export const AWAY_LABEL: Record<AwayReason, string> = { dayOff: '하루 쉼', vacation: '휴가', burnout: '번아웃으로 쉼' };
+/** 2호점에 다녀온 날 오르는 스트레스(쉬는 날이 아니다) */
+export const BRANCH_VISIT_STRESS = 2;
+export const AWAY_LABEL: Record<AwayReason, string> = { dayOff: '하루 쉼', vacation: '휴가', burnout: '번아웃으로 쉼', branch: '2호점 들르기' };
 
 export function initialOwner(ratings: Ratings): OwnerState {
   return {
@@ -92,6 +94,12 @@ function scheduleAway(s: GameState, days: number, reason: AwayReason): GameState
   return { ...s, owner: { ...s.owner, awayFrom: from, awayUntil: from + days - 1, awayReason: reason } };
 }
 
+/** 내일 하루 2호점에서 보낸다: 1호점은 알바가 보고, 쉬는 날은 아니다(스트레스가 조금 오른다). */
+export function visitBranch(s: GameState): GameState {
+  if (!s.branch) throw new Error('2호점이 없어요');
+  return scheduleAway(s, 1, 'branch');
+}
+
 /** 내일 하루 가게를 알바에게 맡긴다. */
 export function takeDayOff(s: GameState): GameState {
   return scheduleAway(s, 1, 'dayOff');
@@ -126,6 +134,11 @@ export function ownerHour(s: GameState, hour: number, staffOnDuty: number, lost:
 
 /** 마감 때: 쉰 날이면 크게 내리고, 일한 날이면 긴 영업·연속 출근만큼 오른다. */
 export function ownerEvening(s: GameState, closed: boolean, revenueRecord: boolean): void {
+  if (!closed && ownerAway(s) && s.owner.awayReason === 'branch') {
+    addStress(s, '2호점 들르기', BRANCH_VISIT_STRESS);
+    s.owner = { ...s.owner, daysWithoutRest: s.owner.daysWithoutRest + 1 };
+    return;
+  }
   if (closed || ownerAway(s)) {
     addStress(s, closed ? '정기 휴무' : AWAY_LABEL[s.owner.awayReason ?? 'dayOff'], -STRESS_REST_DAY);
     s.owner = { ...s.owner, daysWithoutRest: 0 };

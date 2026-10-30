@@ -34,10 +34,10 @@ test('배움 탭: 최근 부검 리포트에 원인별 몫·핵심 지표·힌�
 
 test('도감: 연 카드는 내 숫자와 설명, 못 연 카드는 여는 법', () => {
   render(<LearnPanel state={twoMonths} update={() => {}} />);
-  fireEvent.click(screen.getByRole('button', { name: /도감 \d+\/22/ }));
+  fireEvent.click(screen.getByRole('button', { name: /도감 \d+\/25/ }));
   const dex = screen.getByRole('list', { name: '경영 개념 도감' });
   const cards = within(dex).getAllByRole('listitem');
-  expect(cards).toHaveLength(22);
+  expect(cards).toHaveLength(25);
   const be = cards.find((c) => c.textContent!.includes('손익분기점'))!;
   expect(be.textContent).toContain('방금 겪은 일');
   expect(be.textContent).toMatch(/하루 주문 [\d.]+건/);

@@ -149,15 +149,19 @@ export function localDemand(s: GameState, day: number): { hall: number; delivery
       delivery *= s.levers.appAds ? LOCAL_DEMAND.appRankWithAds : LOCAL_DEMAND.appRank;
     }
   }
-  for (const c of calendarActive(s.neighborhoodId, day)) {
-    let f = 1;
-    if (c.key === 'vacation') f = LOCAL_DEMAND.campusVacation;
-    else if (c.key === 'summerLeave') f = LOCAL_DEMAND.officeSummerLeave;
-    else if (c.key === 'seollal' || c.key === 'chuseok') f = LOCAL_DEMAND.holiday[s.neighborhoodId];
-    hall *= f;
-    delivery *= f;
+  const cal = calendarDemand(s.neighborhoodId, day);
+  return { hall: hall * cal, delivery: delivery * cal };
+}
+
+/** 해마다 같은 때(방학·휴가철·명절): 동네만 알면 정해진다(2호점도 쓴다) */
+export function calendarDemand(hood: NeighborhoodId, day: number): number {
+  let f = 1;
+  for (const c of calendarActive(hood, day)) {
+    if (c.key === 'vacation') f *= LOCAL_DEMAND.campusVacation;
+    else if (c.key === 'summerLeave') f *= LOCAL_DEMAND.officeSummerLeave;
+    else if (c.key === 'seollal' || c.key === 'chuseok') f *= LOCAL_DEMAND.holiday[hood];
   }
-  return { hall, delivery };
+  return f;
 }
 
 // ── 새 사건 ──────────────────────────────────────────

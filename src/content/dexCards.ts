@@ -6,7 +6,7 @@ export type CardId =
   | 'elasticity' | 'reputation' | 'retention' | 'trust'
   | 'fx' | 'supplyShock' | 'hedging' | 'inventory'
   | 'bottleneck' | 'opportunityCost' | 'laborCost' | 'sustainability'
-  | 'competition' | 'seasonality';
+  | 'competition' | 'seasonality' | 'delegation' | 'scale' | 'cannibalization';
 
 export interface CardDef {
   title: string;
@@ -22,7 +22,7 @@ export const CARD_IDS: CardId[] = [
   'revenueProfit', 'fixedVariable', 'contribution', 'breakeven', 'costRate', 'cashflow', 'lease', 'debt',
   'elasticity', 'reputation', 'retention', 'trust', 'competition',
   'fx', 'supplyShock', 'hedging', 'inventory',
-  'bottleneck', 'opportunityCost', 'laborCost', 'sustainability', 'seasonality',
+  'bottleneck', 'opportunityCost', 'laborCost', 'sustainability', 'seasonality', 'delegation', 'scale', 'cannibalization',
 ];
 
 export const CARDS: Record<CardId, CardDef> = {
@@ -130,6 +130,21 @@ export const CARDS: Record<CardId, CardDef> = {
     title: '비수기와 계절성', category: '운영', icon: '📅',
     text: '해마다 같은 때 손님이 줄고 느는 흐름이에요. 미리 알 수 있으니, 비수기엔 비용을 줄이고 성수기엔 일손과 재료를 미리 맞춰 둬요.',
     howTo: '방학·휴가철·명절처럼 해마다 오는 비수기를 겪으면 열려요.',
+  },
+  delegation: {
+    title: '위임', category: '운영', icon: '🤝',
+    text: '맡기면 내 시간이 생기지만, 일이 내 기준대로 되지는 않아요. 그래서 맡길 땐 사람을 잘 고르고, 지킬 규칙을 분명히 정하고, 가끔 직접 들러 확인해요.',
+    howTo: '2호점을 매니저에게 맡기면 열려요.',
+  },
+  scale: {
+    title: '규모의 경제', category: '원가·재고', icon: '📦',
+    text: '많이 살수록 하나당 값이 싸지는 거예요. 가게가 늘면 재료를 함께 사서 원가를 낮출 수 있어요. 대신 한 곳의 문제가 모든 가게로 번질 수도 있어요.',
+    howTo: '2호점이 1호점과 재료를 함께 사면 열려요.',
+  },
+  cannibalization: {
+    title: '자기잠식', category: '가격·손님', icon: '🍰',
+    text: '새 가게나 새 메뉴가 남의 손님이 아니라 내 손님을 빼앗아 오는 거예요. 가게 둘의 매출을 합쳐서 정말 늘었는지 봐야 해요.',
+    howTo: '2호점을 1호점과 같은 동네에 열면 열려요.',
   },
   sustainability: {
     title: '지속 가능성', category: '운영', icon: '🔋',

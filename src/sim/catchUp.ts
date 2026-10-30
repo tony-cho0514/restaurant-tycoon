@@ -25,6 +25,8 @@ export interface CatchUpSummary {
   newMessages: number;
   cards: CardId[];
   events: string[];
+  /** 2호점 이익(있을 때만). 통장엔 함께 들어온다. */
+  branchProfit?: number;
   /** 멈춘 까닭(충전을 다 쓰면 없음) */
   stoppedBy?: PauseReason['kind'];
 }
@@ -63,6 +65,7 @@ export function catchUp(s0: GameState, nowMs: number, onTick?: (s: GameState) =>
       cards: CARD_IDS.filter((id) => s.learning.dex[id] && !s0.learning.dex[id]),
       events: [...news, ...local],
       stoppedBy: pauses[0]?.kind,
+      ...(s.branch ? { branchProfit: s.branch.days.filter((d) => d.day >= s0.clock.day && d.day < s.clock.day).reduce((a, d) => a + d.profit, 0) } : {}),
     },
   };
 }

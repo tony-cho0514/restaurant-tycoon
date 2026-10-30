@@ -105,7 +105,7 @@ test('도감: 처음 겪을 때 내 숫자로 한 장씩 열리고 메시지가 
   // 한 번 연 카드는 다시 열리지 않는다
   const once = s28.messages.items.filter((m) => m.from === 'book' && m.text.includes('매출과 이익'));
   expect(once).toHaveLength(1);
-  expect(CARD_IDS).toHaveLength(22);
+  expect(CARD_IDS).toHaveLength(25);
 });
 
 test('배움 기록 없는 옛 저장도 열린다', () => {

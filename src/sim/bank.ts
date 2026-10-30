@@ -56,19 +56,19 @@ export function canBorrow(s: GameState): boolean {
 }
 
 /** 원리금 균등: 매달 같은 돈을 내고, 그 안의 이자는 남은 원금에 매긴다 */
-export function monthlyPayment(amount: number): number {
-  const r = LOAN_RATE / 12;
-  return Math.round((amount * r) / (1 - (1 + r) ** -LOAN_MONTHS));
+export function monthlyPayment(amount: number, rate = LOAN_RATE, months = LOAN_MONTHS): number {
+  const r = rate / 12;
+  return Math.round((amount * r) / (1 - (1 + r) ** -months));
 }
 
-export function loanSchedule(amount: number): { n: number; interest: number; principal: number; balance: number }[] {
-  const r = LOAN_RATE / 12;
-  const pay = monthlyPayment(amount);
+export function loanSchedule(amount: number, rate = LOAN_RATE, months = LOAN_MONTHS): { n: number; interest: number; principal: number; balance: number }[] {
+  const r = rate / 12;
+  const pay = monthlyPayment(amount, rate, months);
   const rows = [];
   let balance = amount;
-  for (let n = 1; n <= LOAN_MONTHS; n++) {
+  for (let n = 1; n <= months; n++) {
     const interest = Math.round(balance * r);
-    const principal = n === LOAN_MONTHS ? balance : Math.min(balance, pay - interest);
+    const principal = n === months ? balance : Math.min(balance, pay - interest);
     balance -= principal;
     rows.push({ n, interest, principal, balance });
   }
