@@ -155,8 +155,8 @@ export function ownerHoursToday(s: GameState): number {
   return n;
 }
 
-/** 틱 끝: 지침 알림, 번아웃. 번아웃이면 이번 시간 뒤로 퇴근하고 내일부터 며칠 쉰다. */
-export function ownerCheck(s: GameState, dayOver: boolean): void {
+/** 틱 끝: 지침, 번아웃. 번아웃이면 이번 시간 뒤로 퇴근하고 내일부터 며칠 쉰다. 지침 선을 막 넘으면 'tired'를 돌려준다. */
+export function ownerCheck(s: GameState, dayOver: boolean): 'tired' | null {
   const o = s.owner;
   const day = s.clock.day;
   if (o.stress >= STRESS_BURNOUT && !ownerAway(s) && o.awayUntil < day + 1) {
@@ -169,18 +169,14 @@ export function ownerCheck(s: GameState, dayOver: boolean): void {
       headline: '[사장님] 과로로 쓰러졌어요',
       body: `내일부터 ${BURNOUT_DAYS}일은 억지로 쉬어야 해요. 그동안 알바가 없는 시간엔 가게 문을 닫아요. 쉬는 날을 정하거나 알바에게 맡기세요.`,
     });
-    return;
+    return null;
   }
   if (o.stress >= STRESS_TIRED && !o.warned) {
     s.owner = { ...o, warned: true };
-    s.news = pushNews(s.news, {
-      day, kind: 'announce', important: true, tone: 'bad',
-      headline: '[사장님] 너무 지쳤어요 — 좀 쉬세요',
-      body: '지치면 피자를 덜 만들고, 응대가 거칠어지고, 실수로 버리는 피자가 생겨요. 가게 탭에서 일찍 퇴근·하루 쉬기·휴가를 고를 수 있어요.',
-    });
-  } else if (o.stress < STRESS_WARN_RESET && o.warned) {
-    s.owner = { ...o, warned: false };
+    return 'tired';
   }
+  if (o.stress < STRESS_WARN_RESET && o.warned) s.owner = { ...o, warned: false };
+  return null;
 }
 
 /** 화면용 표정 */

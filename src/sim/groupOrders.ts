@@ -164,7 +164,7 @@ function settleGroup(s: GameState, o: GroupOffer) {
   addStress(s, success ? '단체 주문 성공' : '단체 주문 실패', success ? STRESS_EVENT.groupSuccess : STRESS_EVENT.groupFail);
   s.ratings = { ...s.ratings, delivery: Math.min(5, Math.max(1, s.ratings.delivery + (success ? GROUP_RATING_UP : -GROUP_RATING_DOWN))) };
   s.news = pushNews(s.news, {
-    day: s.clock.day, kind: 'announce', important: !success, tone: success ? 'good' : 'bad',
+    day: s.clock.day, kind: 'announce', important: false, tone: success ? 'good' : 'bad',
     headline: success ? `[단체] ${o.title} 배달 완료!` : `[단체] ${o.title} — ${need}판 중 ${ok}판만 보냈어요`,
     body: success ? '단골이 될지도 몰라요. 평점이 조금 올랐어요.' : '약속을 못 지켜 평점이 크게 깎였어요. 재료와 일손을 미리 챙겨 두세요.',
   });
@@ -177,7 +177,7 @@ export function failMissedGroups(s: GameState): void {
     addStress(s, '단체 주문 실패', STRESS_EVENT.groupFail);
     s.ratings = { ...s.ratings, delivery: Math.max(1, s.ratings.delivery - GROUP_RATING_DOWN) };
     s.news = pushNews(s.news, {
-      day: s.clock.day, kind: 'announce', important: true, tone: 'bad',
+      day: s.clock.day, kind: 'announce', important: false, tone: 'bad',
       headline: `[단체] ${o.title} 약속을 못 지켰어요`,
       body: '영업시간 밖이거나 휴무일이었어요. 평점이 크게 깎였어요.',
     });

@@ -162,11 +162,8 @@ const REVEAL_DAYS: [keyof Traits, number][] = [['speed', 7], ['kindness', 14], [
 /** 개점 때: 결근, (월요일) 그만두기 */
 export function staffMorning(s: GameState, rng: Rng, isMonday: boolean): GameState {
   let news = s.news;
+  // 결근은 뉴스 대신 알바 카톡으로 온다(messages.absenceMessages).
   const absentToday = s.staff.filter((x) => rng.chance(0.05 * (1 - x.traits.diligence))).map((x) => x.id);
-  for (const id of absentToday) {
-    const x = s.staff.find((y) => y.id === id)!;
-    news = pushNews(news, { day: s.clock.day, kind: 'flavor', important: false, tone: 'bad', headline: `[직원] ${x.name} 결근`, body: '오늘은 일손이 하나 모자라요.' });
-  }
   let staff = s.staff;
   if (isMonday) {
     const openDays = 7 - (s.settings.closedDay === null ? 0 : 1);

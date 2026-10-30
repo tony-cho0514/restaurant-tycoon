@@ -69,11 +69,16 @@ test('스트레스가 높으면 처리 능력이 줄고, 번아웃이 오면 억
   expect(b.news.items.some((n) => n.headline.includes('쓰러졌'))).toBe(true);
 });
 
-test('스트레스가 지침 선을 넘으면 「좀 쉬세요」 알림이 온다', () => {
+test('스트레스가 지침 선을 넘으면 멈추지 않고 사장님 혼잣말이 뜬다', () => {
   let s = g(); s.owner = { ...s.owner, stress: STRESS_TIRED - 0.5 };
-  let warned = false;
-  for (let i = 0; i < 11 && !warned; i++) { const r = advanceTick(s); s = r.state; warned = r.pauses.some((p) => p.kind === 'news' && s.news.items.find((n) => n.id === p.newsId)?.headline.includes('쉬세요')); }
+  let warned = false; let paused = false;
+  for (let i = 0; i < 11 && !warned; i++) {
+    const before = s.messages.nextId; const r = advanceTick(s); s = r.state;
+    paused ||= r.pauses.some((p) => p.kind === 'news');
+    warned = s.messages.items.some((m) => m.id >= before && m.from === 'owner' && m.important && m.action === 'shop');
+  }
   expect(warned).toBe(true);
+  expect(paused).toBe(false);
 });
 
 test('스트레스 없는 옛 저장도 열린다', () => {

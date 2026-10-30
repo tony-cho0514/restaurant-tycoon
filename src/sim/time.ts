@@ -13,7 +13,7 @@ export interface Clock {
 
 export type Season = 'spring' | 'summer' | 'autumn' | 'winter';
 
-const DAY_NAMES = ['월', '화', '수', '목', '금', '토', '일'];
+export const DAY_NAMES = ['월', '화', '수', '목', '금', '토', '일'];
 
 export function seasonOf(month: number): Season {
   if (month >= 3 && month <= 5) return 'spring';

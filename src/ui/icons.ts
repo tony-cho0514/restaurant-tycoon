@@ -3,6 +3,7 @@ import type { IngredientId } from '../sim/ingredients';
 import type { LeverId } from '../sim/levers';
 import type { MenuItemId } from '../sim/menu';
 import type { NeighborhoodId } from '../sim/neighborhoods';
+import type { Message, Sender } from '../sim/messages';
 import type { NewsItem, ShockType } from '../sim/news';
 
 export const INGREDIENT_ICON: Record<IngredientId, string> = {
@@ -68,4 +69,21 @@ export function newsIcon(n: Pick<NewsItem, 'kind'> & { shockType?: ShockType }):
   return '📰';
 }
 
-export const TAB_ICON = { status: '📊', sales: '🧾', menu: '🍕', inventory: '📦', staff: '👥', shop: '🏪', levers: '🛠️', ledger: '📒', news: '📰' } as const;
+const SENDER_ICON: Record<Sender, string> = {
+  review: '⭐',
+  request: '💬',
+  group: '🎉',
+  staff: '👷',
+  supplier: '🚚',
+  news: '📰',
+  owner: '🧑‍🍳',
+};
+
+/** 메시지 보낸 쪽 그림: 리뷰는 배달앱·홀, 뉴스는 사건 종류마다 */
+export function messageIcon(m: Pick<Message, 'from' | 'channel' | 'shockType'>): string {
+  if (m.from === 'review') return m.channel === 'hall' ? '🍽️' : '📱';
+  if (m.from === 'news' && m.shockType) return SHOCK_ICON[m.shockType];
+  return SENDER_ICON[m.from];
+}
+
+export const TAB_ICON = { status: '📊', sales: '🧾', menu: '🍕', inventory: '📦', staff: '👥', shop: '🏪', levers: '🛠️', ledger: '📒', messages: '💬' } as const;

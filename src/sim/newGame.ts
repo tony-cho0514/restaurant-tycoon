@@ -4,10 +4,12 @@ import { initialEconomy } from './economy';
 import { INGREDIENT_IDS, ingredientPrice, type IngredientId } from './ingredients';
 import { DEFAULT_RULES, autoReorder, emptyInventory } from './inventory';
 import { emptyDay } from './ledger';
+import { initialMessages } from './messages';
 import { MENU, activePizzas, defaultMenuActive, type MenuActive, type MenuItemId } from './menu';
 import { initialOwner } from './owner';
 import { initialStaff } from './staff';
 import { defaultUpgrades } from './upgrades';
+import type { NewsState } from './news';
 import { NEIGHBORHOODS, cashAfterSetup, type Neighborhood, type NeighborhoodId } from './neighborhoods';
 import { Rng } from './rng';
 import { START_MONTH } from './time';
@@ -39,6 +41,16 @@ export function createNewGame(o: { seed: number; neighborhoodId: NeighborhoodId;
   const stock = autoReorder(emptyInventory(), rules, fallbackUsage(n), prices, 0);
   today.rent = n.listing.monthlyRent;
   today.purchases = stock.spent;
+  const news: NewsState = {
+    pending: [],
+    active: [],
+    items: [{
+      id: 'n1', day: 0, kind: 'announce', important: true, tone: 'good',
+      headline: `「${o.shopName}」 개업!`,
+      body: `${n.name}에 작은 피자집이 문을 열었다. 첫 손님을 맞을 준비가 끝났다.`,
+    }],
+    nextId: 2,
+  };
   return {
     version: 3,
     seed: o.seed,
@@ -56,16 +68,7 @@ export function createNewGame(o: { seed: number; neighborhoodId: NeighborhoodId;
     ratings: { hall: 4.5, delivery: 4.5 },
     inventory: stock.inv,
     rules,
-    news: {
-      pending: [],
-      active: [],
-      items: [{
-        id: 'n1', day: 0, kind: 'announce', important: true, tone: 'good',
-        headline: `「${o.shopName}」 개업!`,
-        body: `${n.name}에 작은 피자집이 문을 열었다. 첫 손님을 맞을 준비가 끝났다.`,
-      }],
-      nextId: 2,
-    },
+    news,
     ledger: { days: [], months: [] },
     today,
     charge: { ticks: NEW_GAME_CHARGE_TICKS, lastAccruedAt: o.nowMs },
@@ -82,5 +85,6 @@ export function createNewGame(o: { seed: number; neighborhoodId: NeighborhoodId;
     groupOrders: [],
     nextStaffId: 2,
     owner: initialOwner({ hall: 4.5, delivery: 4.5 }),
+    messages: initialMessages(news.items, true),
   };
 }

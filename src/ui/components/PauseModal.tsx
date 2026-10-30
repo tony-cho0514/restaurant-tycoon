@@ -12,7 +12,7 @@ function dayText(day: number, today: number): string {
   return d === 0 ? '오늘' : d === 1 ? '내일' : d === 2 ? '모레' : `${d}일 뒤`;
 }
 
-export type TabId = 'status' | 'sales' | 'menu' | 'inventory' | 'staff' | 'shop' | 'levers' | 'ledger' | 'news';
+export type TabId = 'status' | 'sales' | 'menu' | 'inventory' | 'staff' | 'shop' | 'levers' | 'ledger' | 'messages';
 
 const MS_PER_CHARGE_TICK = 86_400_000 / CHARGE_TICKS_PER_REAL_DAY;
 

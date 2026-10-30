@@ -10,8 +10,10 @@ import { defaultUpgrades } from './upgrades';
 import { LEVER_IDS } from './levers';
 import { MENU } from './menu';
 import { NEIGHBORHOODS } from './neighborhoods';
+import { initialMessages } from './messages';
 import { initialOwner } from './owner';
 import { advanceTickInPlace } from './tick';
+import type { NewsItem } from './news';
 import { DEFAULT_SETTINGS, type GameState } from './types';
 
 export const SAVE_KEY = 'restaurant-tycoon/save/v1';
@@ -69,7 +71,8 @@ function hasGameShape(x: unknown): x is GameState {
     Array.isArray(s.orders) && num(s.openedDay) &&
     obj(s.menuActive) && obj(s.menuDeveloped) && Array.isArray(s.staff) && Array.isArray(s.applicants) &&
     obj(s.upgrades) && Array.isArray(s.groupOffers) && Array.isArray(s.groupOrders) && num(s.nextStaffId) &&
-    allNums(s.owner, ['stress', 'daysWithoutRest', 'awayFrom', 'awayUntil']) && Array.isArray((s.owner as Record<string, unknown>).log)
+    allNums(s.owner, ['stress', 'daysWithoutRest', 'awayFrom', 'awayUntil']) && Array.isArray((s.owner as Record<string, unknown>).log) &&
+    obj(s.messages) && Array.isArray(s.messages.items) && num(s.messages.nextId)
   );
 }
 
@@ -94,7 +97,7 @@ export function migrate(x: unknown): unknown {
   if (!obj(x)) return x;
   if (x.version === 1) {
     const clock = obj(x.clock) ? (x.clock as { day: number; hour: number }) : { day: 0, hour: 11 };
-    return withOwner(toV3({
+    return withExtras(toV3({
       ...x,
       version: 2,
       settings: { ...DEFAULT_SETTINGS },
@@ -103,15 +106,22 @@ export function migrate(x: unknown): unknown {
       openedDay: clock.hour > 11 ? clock.day : clock.day - 1,
     }));
   }
-  if (x.version === 2) return withOwner(toV3(x));
-  return withOwner(x);
+  if (x.version === 2) return withExtras(toV3(x));
+  return withExtras(x);
 }
 
-/** 사장님 스트레스가 생기기 전 저장: 기본 사장님을 채운다(버전은 그대로 3). */
-function withOwner(x: Record<string, unknown>): Record<string, unknown> {
-  if (obj(x.owner)) return x;
-  const ratings = allNums(x.ratings, ['hall', 'delivery']) ? (x.ratings as { hall: number; delivery: number }) : { hall: 4.5, delivery: 4.5 };
-  return { ...x, owner: initialOwner(ratings) };
+/** 뒤에 생긴 필드를 채운다(버전은 그대로 3): 사장님 스트레스, 사이드 메시지(지난 뉴스로 시작) */
+function withExtras(x: Record<string, unknown>): Record<string, unknown> {
+  let out = x;
+  if (!obj(out.owner)) {
+    const ratings = allNums(out.ratings, ['hall', 'delivery']) ? (out.ratings as { hall: number; delivery: number }) : { hall: 4.5, delivery: 4.5 };
+    out = { ...out, owner: initialOwner(ratings) };
+  }
+  if (!obj(out.messages)) {
+    const items = obj(out.news) && Array.isArray(out.news.items) ? (out.news.items as NewsItem[]).filter((n) => obj(n) && typeof n.headline === 'string' && typeof n.id === 'string') : [];
+    out = { ...out, messages: initialMessages(items, false) };
+  }
+  return out;
 }
 
 /** 버전 2 → 3: 새 메뉴·재료, 직원, 업그레이드, 단체 주문 필드를 채운다. */

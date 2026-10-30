@@ -7,6 +7,7 @@ import type { Levers } from './levers';
 import type { MenuItemId } from './menu';
 import type { NeighborhoodId } from './neighborhoods';
 import type { NewsState } from './news';
+import type { MessageState } from './messages';
 import type { OwnerState } from './owner';
 import type { OrderRecord } from './orders';
 import type { GroupOffer } from './groups';
@@ -61,6 +62,8 @@ export interface GameState {
   absentToday?: number[];
   /** 사장님: 스트레스·쉬는 날 */
   owner: OwnerState;
+  /** 사이드 메시지: 리뷰·요청·알바 카톡·거래처·사장님 혼잣말 */
+  messages: MessageState;
 }
 
 export interface Settings {

@@ -14,7 +14,8 @@ import { NEIGHBORHOODS } from './neighborhoods';
 import { fallbackUsage } from './newGame';
 import { pruneOrders, type OrderRecord } from './orders';
 import { dailyLabor } from './labor';
-import { announceMinWage, applyMinWage, dailyFlavor, demandShock, fireDue, planWeek, shockMultiplier } from './news';
+import { absenceMessages, dayEndMessage, fromNews, hourMessages, pushMessage, tiredMessage, type ReviewSeed } from './messages';
+import { announceMinWage, applyMinWage, dailyFlavor, demandShock, fireDue, planWeek, shockMultiplier, type NewsItem } from './news';
 import { satisfaction, updateRating, type Channel } from './ratings';
 import { Rng } from './rng';
 import { serveHour } from './service';
@@ -101,6 +102,7 @@ function openDay(s: GameState, rng: Rng): number[] {
       if (quit > 0) addStress(s, '알바가 그만둠', quit * STRESS_EVENT.staffQuit);
       if (absent > 0) addStress(s, '알바 결근', absent * STRESS_EVENT.staffAbsent);
     }
+    absenceMessages(s);
   }
   Object.assign(s, arriveApplicants(s, rng));
   const g = morningGroupOffers(s, rng);
@@ -153,6 +155,7 @@ function serveOrders(s: GameState, rng: Rng, anim: AnimEvents) {
   const pIndex = priceIndex(s.menuPrices, s.economy.inflation, s.menuActive);
   const zoneList = n.zones.map((z) => ({ item: z, weight: z.share }));
   const stockouts = new Set<IngredientId>();
+  const seeds: ReviewSeed[] = [];
 
   const serveOne = (ch: Channel) => {
     const pizza = rng.weighted(mixList);
@@ -238,11 +241,17 @@ function serveOrders(s: GameState, rng: Rng, anim: AnimEvents) {
       hallBonus,
     }, rng);
     s.ratings = updateRating(s.ratings, ch, sat, s.levers);
+    seeds.push({ ch, sat, wait: ch === 'hall' ? served.waitHall : (minutes ?? served.waitDelivery), pizza, gaveCola });
   };
 
   for (let i = 0; i < served.servedHall; i++) serveOne('hall');
   for (let i = 0; i < served.servedDelivery; i++) serveOne('delivery');
   anim.stockouts = [...stockouts];
+  hourMessages(s, {
+    seeds, priceIndex: pIndex, hallBonus, mood: moodBonus(s, hour), stockouts: anim.stockouts,
+    staffNames: staffWorking(s, hour).map((x) => x.name), usage: estimatedUsage(s),
+    openHour: s.settings.openHour, closeHour: s.settings.closeHour,
+  });
 
   // 지친 사장님은 가끔 피자를 망쳐 버린다.
   if (ownerWorking(s, hour) && s.owner.stress >= STRESS_TIRED && rng.chance(TIRED_MISTAKE_CHANCE)) {
@@ -310,12 +319,18 @@ function closeDayInPlace(s: GameState, pauses: PauseReason[], closed: boolean) {
   const revenue = s.today.revenueHall + s.today.revenueDelivery;
   const record = !closed && s.ledger.days.length >= 7 && revenue > Math.max(...s.ledger.days.map((d) => d.revenueHall + d.revenueDelivery));
   ownerEvening(s, closed, record);
+  dayEndMessage(s, closed, record);
   s.ledger = closeDay(s.ledger, s.today);
   s.orders = pruneOrders(s.orders, s.clock.day);
   if (cal.dayOfMonth === 27) {
     s.ledger = closeMonth(s.ledger, cal.monthIndex);
     pauses.push({ kind: 'monthEnd', monthIndex: cal.monthIndex });
   }
+}
+
+/** 멈춰서 알릴 소식: 실제로 터진 위기·기회, 그리고 바로 챙길 일(채용·퇴사·최저임금·번아웃). 신호와 작은 소식은 말풍선으로만 뜬다. */
+export function pausesFor(n: NewsItem): boolean {
+  return n.important && n.kind !== 'signal';
 }
 
 function goToNextDay(s: GameState) {
@@ -370,10 +385,13 @@ export function advanceTickInPlace(s: GameState): { pauses: PauseReason[]; anim:
   }
   const isNew = (id: string) => Number(id.slice(1)) >= firstNewId;
   for (const item of s.news.items) if (isNew(item.id) && item.kind === 'fire' && item.tone === 'bad') addStress(s, '나쁜 소식', STRESS_EVENT.badNews);
-  ownerCheck(s, dayOver);
+  if (ownerCheck(s, dayOver) === 'tired') tiredMessage(s);
 
+  // 새 소식은 모두 메시지로 오고, 그중 큰일만 멈춰서 알린다.
   for (const item of s.news.items) {
-    if (item.important && isNew(item.id)) pauses.push({ kind: 'news', newsId: item.id });
+    if (!isNew(item.id)) continue;
+    pushMessage(s, fromNews(item, s.clock.hour));
+    if (pausesFor(item)) pauses.push({ kind: 'news', newsId: item.id });
   }
   if (wentNegative) pauses.push({ kind: 'cashNegative' });
 
