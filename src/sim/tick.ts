@@ -1,6 +1,6 @@
 // 한 틱 = 영업 1시간. 개점(11시)에 하루 준비, 매시간 손님 응대, 마감(21시)에 하루 정산.
 import {
-  APP_ADS_WEEKLY, APP_FEE_RATE, COLA_ATTACH_RATE, DELIVERY_FEE_OWNER, INSULATED_BOX_COST, LABOR_OVERHEAD,
+  APP_ADS_WEEKLY, APP_FEE_RATE, CARD_FEE_RATE, COLA_ATTACH_RATE, DELIVERY_COST_TOTAL, INSULATED_BOX_COST,
   MISC_COST_PER_PIZZA, PREMIUM_CHEESE_MULT, STAFF_COUNT, UTILITIES_PER_HOUR,
 } from './balance';
 import { accrueCharge, canPlay, consumeTick } from './charge';
@@ -12,7 +12,8 @@ import { closeDay, closeMonth, emptyDay } from './ledger';
 import { MENU, PIZZA_IDS, type PizzaId } from './menu';
 import { NEIGHBORHOODS } from './neighborhoods';
 import { fallbackUsage } from './newGame';
-import { pruneOrders } from './orders';
+import { pruneOrders, type OrderRecord } from './orders';
+import { dailyLabor } from './labor';
 import { announceMinWage, applyMinWage, dailyFlavor, demandShock, fireDue, planWeek, shockMultiplier } from './news';
 import { satisfaction, updateRating, type Channel } from './ratings';
 import { Rng } from './rng';
@@ -98,6 +99,7 @@ function serveOrders(s: GameState, rng: Rng, anim: AnimEvents) {
   const exp = expectedOrders({
     n, hour: s.clock.hour, isWeekend: cal.isWeekend, economy: s.economy, menuPrices: s.menuPrices,
     ratings: s.ratings, levers: s.levers, shock: demandShock(s.news.active, s.clock.day),
+    deliveryTip: s.settings.deliveryTip,
   });
   const served = serveHour(rng.poisson(exp.hall), rng.poisson(exp.delivery), capacityPerHour(s.levers));
   s.today.lostOrders += served.lost;
@@ -131,6 +133,7 @@ function serveOrders(s: GameState, rng: Rng, anim: AnimEvents) {
       }
     }
     let revenue = s.menuPrices[pizza];
+    const items: OrderRecord['items'] = [{ menu: pizza, qty: 1 }];
     if (rng.chance(COLA_ATTACH_RATE)) {
       addUsage(s.today.usage, 'cola', 1);
       if (stockOf(s.inventory, 'cola') >= 1) {
@@ -138,14 +141,16 @@ function serveOrders(s: GameState, rng: Rng, anim: AnimEvents) {
         s.inventory = r.inv;
         food += r.cost;
         revenue += s.menuPrices.cola;
+        items.push({ menu: 'cola', qty: 1 });
       }
     }
     let gaveCola = false;
     if (ch === 'delivery') {
       const appFee = revenue * APP_FEE_RATE;
       s.today.appFees += appFee;
-      s.today.deliveryFees += DELIVERY_FEE_OWNER;
-      cashOut += appFee + DELIVERY_FEE_OWNER;
+      const ownerDelivery = DELIVERY_COST_TOTAL - s.settings.deliveryTip;
+      s.today.deliveryFees += ownerDelivery;
+      cashOut += appFee + ownerDelivery;
       if (s.levers.insulatedBox) {
         s.today.serviceCost += INSULATED_BOX_COST;
         cashOut += INSULATED_BOX_COST;
@@ -165,8 +170,12 @@ function serveOrders(s: GameState, rng: Rng, anim: AnimEvents) {
     } else {
       s.today.hallOrders += 1;
       s.today.revenueHall += revenue;
+      const cardFee = revenue * CARD_FEE_RATE;
+      s.today.cardFees += cardFee;
+      cashOut += cardFee;
       anim.hallArrivals += 1;
     }
+    s.orders.push({ day: s.clock.day, hour: s.clock.hour, channel: ch, items, amount: revenue });
     s.today.foodCost += food;
     s.cash += revenue - cashOut;
     anim.revenue += revenue;
@@ -203,7 +212,8 @@ function closeDayInPlace(s: GameState, pauses: PauseReason[], closed: boolean) {
   const cal = calendar(s.clock);
   if (!closed) {
     const hours = openHours(s);
-    const labor = Math.round((STAFF_COUNT - 1) * hours * s.economy.minWage * LABOR_OVERHEAD);
+    const openDays = 7 - (s.settings.closedDay === null ? 0 : 1);
+    const labor = (STAFF_COUNT - 1) * dailyLabor(hours, s.economy.minWage, hours * openDays);
     const utilities = Math.round(UTILITIES_PER_HOUR * hours);
     s.today.labor += labor;
     s.today.utilities += utilities;
@@ -217,6 +227,7 @@ function closeDayInPlace(s: GameState, pauses: PauseReason[], closed: boolean) {
   }
   s.today.foodCost = Math.round(s.today.foodCost);
   s.today.appFees = Math.round(s.today.appFees);
+  s.today.cardFees = Math.round(s.today.cardFees);
   s.today.serviceCost = Math.round(s.today.serviceCost);
   s.ledger = closeDay(s.ledger, s.today);
   s.orders = pruneOrders(s.orders, s.clock.day);

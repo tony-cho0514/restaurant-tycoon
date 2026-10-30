@@ -11,14 +11,24 @@ export const MISC_COST_PER_PIZZA = 800;
 export const COLA_ATTACH_RATE = 0.45;
 
 export const APP_FEE_RATE = 0.128;
-export const DELIVERY_FEE_OWNER = 3000;
+/** 배달 한 건 비용. 손님이 배달팁으로 일부를 내고 나머지를 사장이 낸다. */
+export const DELIVERY_COST_TOTAL = 4000;
+export const DELIVERY_TIP_DEFAULT = 1000;
+/** 손님 배달팁이 1,000원 오를 때마다 배달 주문이 줄어드는 비율 */
+export const DELIVERY_TIP_ELASTICITY = 0.08;
+/** 홀 카드 결제 수수료(영세 가맹점 수준) */
+export const CARD_FEE_RATE = 0.015;
 export const INSULATED_BOX_COST = 400;
 export const APP_ADS_WEEKLY = 88_000;
 export const APP_ADS_DEMAND = 1.15;
 
 /** 공과금(전기·가스·수도)은 영업 시간에 비례: 11시간이면 약 3만 원 */
 export const UTILITIES_PER_HOUR = 2_730;
-export const LABOR_OVERHEAD = 1.2;
+/** 4대보험 사업주 부담 비율 */
+export const INSURANCE_RATE = 0.09;
+/** 주휴수당: 주 15시간 이상 일하면 근무시간의 1/5만큼 더 */
+export const HOLIDAY_PAY_RATE = 0.2;
+export const HOLIDAY_PAY_MIN_WEEKLY_HOURS = 15;
 export const START_MIN_WAGE = 10_030;
 export const STAFF_COUNT = 2;
 export const PIZZAS_PER_STAFF_HOUR = 7;

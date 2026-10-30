@@ -1,5 +1,7 @@
 // 운영 수단: 문제 앞에서 사장이 직접 골라 쓰는 수단들. 비용은 미리 정확히, 효과는 해 봐야 안다.
-import { APP_ADS_WEEKLY, APP_FEE_RATE, COLA_ATTACH_RATE, DELIVERY_FEE_OWNER, INSULATED_BOX_COST } from './balance';
+import {
+  APP_ADS_WEEKLY, APP_FEE_RATE, CARD_FEE_RATE, COLA_ATTACH_RATE, DELIVERY_COST_TOTAL, DELIVERY_TIP_DEFAULT, INSULATED_BOX_COST,
+} from './balance';
 import { orderMix } from './demand';
 import type { Cycle } from './economy';
 import type { IngredientId } from './ingredients';
@@ -47,6 +49,8 @@ export interface MarginCtx {
   n: Neighborhood;
   /** 지금 경기. 생략하면 보통 경기로 계산한다. */
   cycle?: Cycle;
+  /** 손님이 내는 배달팁. 생략하면 기본값 */
+  deliveryTip?: number;
 }
 
 export function orderEconomics(ctx: MarginCtx, ch: 'hall' | 'delivery') {
@@ -58,8 +62,9 @@ export function orderEconomics(ctx: MarginCtx, ch: 'hall' | 'delivery') {
     revenue += mix[id] * ctx.menuPrices[id];
     cost += mix[id] * unitCost(id, ctx.prices, opts);
   }
+  if (ch === 'hall') cost += revenue * CARD_FEE_RATE;
   if (ch === 'delivery') {
-    cost += revenue * APP_FEE_RATE + DELIVERY_FEE_OWNER;
+    cost += revenue * APP_FEE_RATE + (DELIVERY_COST_TOTAL - (ctx.deliveryTip ?? DELIVERY_TIP_DEFAULT));
     if (ctx.levers.insulatedBox) cost += INSULATED_BOX_COST;
     if (ctx.levers.freeCola) cost += ctx.prices.cola500;
   }

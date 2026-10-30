@@ -66,3 +66,43 @@ test('영업 중에 닫는 시각을 앞당기면 다음 틱에 하루를 마감
   s = advanceTick(s).state;
   expect(s.clock.day).toBe(1); expect(s.ledger.days).toHaveLength(1);
 });
+
+// A3·A4: 주문 기록, 카드 수수료, 배달팁, 인건비
+import { ordersOn } from '../../src/sim/orders';
+import { dailyLabor } from '../../src/sim/labor';
+import { expectedOrders } from '../../src/sim/demand';
+import { NEIGHBORHOODS } from '../../src/sim/neighborhoods';
+import { allOff, defaultMenuPrices } from './helpers';
+
+test('주문이 한 건씩 기록되고 금액 합이 매출과 같다', () => {
+  const s = playDay(g()).s; const d = s.ledger.days[0];
+  const list = ordersOn(s.orders, 0);
+  expect(list.length).toBe(d.hallOrders + d.deliveryOrders);
+  expect(list.reduce((a, o) => a + o.amount, 0)).toBe(d.revenueHall + d.revenueDelivery);
+  expect(list.every((o) => o.items.length >= 1 && o.hour >= 11 && o.hour <= 21)).toBe(true);
+});
+
+test('주문 기록은 7일만 보관한다', () => {
+  let s = g(); for (let i = 0; i < 8; i++) s = playDay(s).s;
+  expect(ordersOn(s.orders, 0)).toHaveLength(0);
+  expect(ordersOn(s.orders, 7).length).toBeGreaterThan(0);
+});
+
+test('홀 매출의 1.5%가 카드 수수료로 나간다', () => {
+  const d = playDay(g()).s.ledger.days[0];
+  expect(d.cardFees).toBe(Math.round(d.revenueHall * 0.015));
+});
+
+test('배달팁을 손님이 더 내면 사장 배달비는 줄고 배달 주문도 준다', () => {
+  let s = g(); s.settings = { ...s.settings, deliveryTip: 2000 };
+  const d = playDay(s).s.ledger.days[0];
+  expect(d.deliveryFees).toBe(d.deliveryOrders * 2000);
+  const econ = { cycle: 'normal', cycleWeeksLeft: 30, fx: 1350, inflation: 1, minWage: 10030, pendingMinWage: null, weather: 'sunny' } as const;
+  const base = { n: NEIGHBORHOODS.campus, hour: 18, isWeekend: false, economy: econ, menuPrices: defaultMenuPrices(), ratings: { hall: 4.5, delivery: 4.5 }, levers: allOff(), shock: { hall: 1, delivery: 1 } };
+  expect(expectedOrders({ ...base, deliveryTip: 2000 }).delivery).toBeCloseTo(expectedOrders({ ...base, deliveryTip: 1000 }).delivery * 0.92);
+});
+
+test('인건비 = 시급×시간 + 4대보험 9% + 주 15시간 이상이면 주휴수당', () => {
+  expect(dailyLabor(11, 10030, 77)).toBe(Math.round(11 * 10030 * 1.29));
+  expect(dailyLabor(4, 10030, 12)).toBe(Math.round(4 * 10030 * 1.09));
+});

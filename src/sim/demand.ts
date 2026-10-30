@@ -1,4 +1,6 @@
-import { APP_ADS_DEMAND, CYCLE_MIX_TILT, CYCLE_SENSITIVITY, PRICE_ELASTICITY, WEATHER_DEMAND } from './balance';
+import {
+  APP_ADS_DEMAND, CYCLE_MIX_TILT, CYCLE_SENSITIVITY, DELIVERY_TIP_DEFAULT, DELIVERY_TIP_ELASTICITY, PRICE_ELASTICITY, WEATHER_DEMAND,
+} from './balance';
 import { CYCLE_DEMAND, type Cycle, type Economy } from './economy';
 import type { Levers } from './levers';
 import { MENU, PIZZA_IDS, type MenuItemId, type PizzaId } from './menu';
@@ -49,6 +51,8 @@ export function expectedOrders(inp: {
   ratings: Ratings;
   levers: Levers;
   shock: { hall: number; delivery: number };
+  /** 손님이 내는 배달팁(원). 생략하면 기본값 */
+  deliveryTip?: number;
 }): { hall: number; delivery: number } {
   const { n, economy } = inp;
   const curveSum = n.hourCurve.reduce((s, x) => s + x, 0);
@@ -62,6 +66,7 @@ export function expectedOrders(inp: {
   const hall = base * (1 - n.deliveryShare) * common * weather.hall * Math.pow(inp.ratings.hall / 4.5, 3) * inp.shock.hall;
   const delivery =
     base * n.deliveryShare * common * weather.delivery * Math.pow(inp.ratings.delivery / 4.5, 3) * inp.shock.delivery *
-    (inp.levers.appAds ? APP_ADS_DEMAND : 1);
+    (inp.levers.appAds ? APP_ADS_DEMAND : 1) *
+    Math.max(0, 1 - DELIVERY_TIP_ELASTICITY * (((inp.deliveryTip ?? DELIVERY_TIP_DEFAULT) - DELIVERY_TIP_DEFAULT) / 1000));
   return { hall, delivery };
 }
