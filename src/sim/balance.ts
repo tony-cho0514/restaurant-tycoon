@@ -115,3 +115,27 @@ export const STRESS_EVENT = {
   ratingUp: -1.5,
   revenueRecord: -4,
 };
+
+// ── 메시지 답장 ──
+/** 답장할 수 있는 날 수(그 뒤엔 답장 버튼이 사라진다) */
+export const REPLY_DAYS = 3;
+/** 리뷰에 직접 답글을 쓰는 수고 */
+export const REPLY_STRESS = 0.5;
+/** 속 시원하게 반박하면 */
+export const REBUT_STRESS = -1;
+/** 사과 답글이 그 리뷰가 깎은 평점을 되돌리는 비율(이 사이에서 무작위) */
+export const APOLOGY_RESTORE: [number, number] = [0.3, 0.6];
+/** 반박이 먹힐 확률. 안 먹히면 그 리뷰만큼 더 깎이고 덤으로 더 */
+export const REBUT_WIN_CHANCE = 0.25;
+export const REBUT_EXTRA_LOSS = 0.03;
+/** 쿠폰: 다시 주문할 때만 빠지는 할인, 다시 올 확률, 며칠 안에 */
+export const COUPON_VALUE = 3000;
+export const COUPON_RETURN_CHANCE = 0.65;
+export const COUPON_RETURN_DAYS = 5;
+/** 쿠폰 받은 손님은 마음이 조금 풀려 있다(만족도 덤) */
+export const COUPON_GOODWILL = 0.5;
+/** 손님 요청: 가격 내리기 폭, 메뉴 약속 기한, 약속을 지키거나 어겼을 때 평점 */
+export const PRICE_CUT = 0.05;
+export const PROMISE_DAYS = 14;
+export const PROMISE_RATING_UP = 0.03;
+export const PROMISE_RATING_DOWN = 0.05;

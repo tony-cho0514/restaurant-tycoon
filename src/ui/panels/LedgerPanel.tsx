@@ -7,7 +7,7 @@ const ROWS: { key: keyof MonthRecord; label: string; sign: 1 | -1 }[] = [
   { key: 'revenueHall', label: '매출(홀)', sign: 1 },
   { key: 'revenueDelivery', label: '매출(배달)', sign: 1 },
   { key: 'foodCost', label: '재료비', sign: -1 },
-  { key: 'serviceCost', label: '서비스 비용', sign: -1 },
+  { key: 'serviceCost', label: '서비스 비용(콜라·보온 포장·쿠폰)', sign: -1 },
   { key: 'wasteCost', label: '폐기', sign: -1 },
   { key: 'labor', label: '인건비', sign: -1 },
   { key: 'rent', label: '월세', sign: -1 },

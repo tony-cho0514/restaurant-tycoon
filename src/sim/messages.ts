@@ -3,7 +3,7 @@
 import {
   NICKNAMES, OWNER_TEXT, REQUEST_TEXT, REVIEW_TEXT, SIGNAL_TIPS, STAFF_TEXT, type Topic,
 } from '../content/messageTemplates';
-import { STRESS_TIRED } from './balance';
+import { REPLY_DAYS, STRESS_TIRED } from './balance';
 import { INGREDIENTS, type IngredientId } from './ingredients';
 import { stockOf } from './inventory';
 import { MENU, PIZZA_IDS, activePizzas, type PizzaId } from './menu';
@@ -19,6 +19,14 @@ export type { Topic };
 export type Sender = 'review' | 'request' | 'group' | 'staff' | 'supplier' | 'news' | 'owner';
 /** 메시지에서 바로 가 볼 탭 */
 export type MessageAction = 'menu' | 'inventory' | 'levers' | 'shop' | 'staff' | 'ledger';
+/** 답장을 받을 수 있는 메시지: 나쁜 리뷰, 손님 요청(무엇을 바라는지) */
+export type Ask = 'review' | 'price' | 'cheese' | 'cola' | 'box' | 'replies' | 'menu' | 'closed' | 'late';
+export type ReplyId = 'auto' | 'apology' | 'coupon' | 'rebut' | 'accept' | 'develop' | 'promise' | 'decline';
+
+/** 답장 뒤에 일어날 일: 쿠폰 손님이 다시 오기, 메뉴 약속 기한 */
+export type FollowUp =
+  | { kind: 'coupon'; msgId: number; name: string; channel: Channel; day: number; hour: number }
+  | { kind: 'promise'; msgId: number; name: string; channel: Channel; menu: PizzaId; dueDay: number };
 
 export interface Message {
   id: number;
@@ -40,11 +48,21 @@ export interface Message {
   /** 같은 날 같은 알림을 두 번 보내지 않기 위한 표시 */
   key?: string;
   action?: MessageAction;
+  /** 답장 받기: 무엇에 대한 답장인지, 언제까지, 바라는 메뉴 */
+  ask?: Ask;
+  replyBy?: number;
+  menu?: PizzaId;
+  /** 이 나쁜 리뷰가 깎은 평점(사과로 되돌릴 몫) */
+  hit?: number;
+  /** 사장님이 단 답장(리뷰 답글 운영 수단이 켜져 있으면 자동 답글) */
+  reply?: { id: ReplyId; text: string };
 }
 
 export interface MessageState {
   items: Message[];
   nextId: number;
+  /** 답장 뒤에 일어날 일 */
+  pending: FollowUp[];
 }
 
 export const MESSAGES_KEEP = 300;
@@ -53,10 +71,11 @@ const REVIEW_CHANCE = 0.07;
 /** 영업 한 시간마다 손님 요청이 올 확률 */
 const REQUEST_CHANCE = 0.06;
 export const OWNER_NAME = '사장님(나)';
+export const AUTO_REPLY = '불편 드려 죄송해요. 더 신경 쓸게요 🙏 (자동 답글)';
 
 export function pushMessage(s: GameState, m: Omit<Message, 'id' | 'day' | 'hour'> & Partial<Pick<Message, 'day' | 'hour'>>): void {
   const msg: Message = { day: s.clock.day, hour: s.clock.hour, ...m, id: s.messages.nextId };
-  s.messages = { items: [...s.messages.items, msg].slice(-MESSAGES_KEEP), nextId: s.messages.nextId + 1 };
+  s.messages = { ...s.messages, items: [...s.messages.items, msg].slice(-MESSAGES_KEEP), nextId: s.messages.nextId + 1 };
 }
 
 /** 메시지 문구 전용 난수: 날짜·시각·용도마다 새로 만든다(장사 난수를 건드리지 않는다). */
@@ -141,7 +160,14 @@ function reviewMessage(s: GameState, c: HourCtx, rng: Rng): void {
   const topic = reviewTopic(r, c, s, rng);
   const stars = starsOf(r.sat);
   const names = NICKNAMES[s.neighborhoodId][r.ch];
+  // 별 1~2개 리뷰엔 답장할 수 있다. 리뷰 답글 운영 수단을 켜 두면 사과 답글이 자동으로 달린다.
+  const bad = stars <= 2;
+  const alpha = (r.ch === 'hall' ? 0.02 : 0.03) * (s.levers.reviewReplies ? 0.7 : 1);
   pushMessage(s, {
+    ...(bad ? {
+      ask: 'review' as const, replyBy: s.clock.day + REPLY_DAYS, hit: Math.max(0, s.ratings[r.ch] - r.sat) * alpha,
+      reply: s.levers.reviewReplies ? { id: 'auto' as const, text: AUTO_REPLY } : undefined,
+    } : {}),
     from: 'review', channel: r.ch, name: rng.pick(names), stars, topic,
     // 홀 대기는 한 시간에서 끊는다(그보다 오래면 손님은 그냥 기다린 것으로 말한다). 배달은 주문 기록의 분과 같게.
     text: fill(rng.pick(REVIEW_TEXT[topic][r.ch]), { pizza: pizzaName(r.pizza), min: String(Math.round(r.ch === 'hall' ? Math.min(r.wait, 60) : r.wait)) }),
@@ -188,24 +214,31 @@ function stockMessages(s: GameState, c: HourCtx, rng: Rng): void {
 function requestMessage(s: GameState, c: HourCtx, rng: Rng): void {
   if (c.seeds.length === 0 || !rng.chance(REQUEST_CHANCE)) return;
   const n = NEIGHBORHOODS[s.neighborhoodId];
-  const opts: { item: { key: string; text: string; action?: MessageAction }; weight: number }[] = [];
-  const add = (key: string, pool: string[], weight: number, action?: MessageAction, vars: Record<string, string> = {}) => {
-    if (!sentWithin(s, `req-${key}`, 7)) opts.push({ item: { key: `req-${key}`, text: fill(rng.pick(pool), vars), action }, weight });
+  type Opt = { key: string; text: string; action?: MessageAction; ask?: Ask; menu?: PizzaId };
+  const opts: { item: Opt; weight: number }[] = [];
+  const add = (key: string, pool: string[], weight: number, action?: MessageAction, vars: Record<string, string> = {}, extra: Partial<Opt> = {}) => {
+    if (!sentWithin(s, `req-${key}`, 7)) opts.push({ item: { key: `req-${key}`, text: fill(rng.pick(pool), vars), action, ...extra }, weight });
   };
-  if (c.priceIndex > 1.08) add('price', REQUEST_TEXT.price, 3 * n.priceSensitivity, 'menu');
-  if (!s.levers.premiumCheese) add('cheese', REQUEST_TEXT.cheese, 1.5, 'levers');
-  if (!s.levers.freeCola && n.deliveryShare >= 0.5) add('cola', REQUEST_TEXT.cola, 1, 'levers');
-  if (!s.levers.insulatedBox && c.seeds.some((r) => r.ch === 'delivery' && r.wait >= 45)) add('box', REQUEST_TEXT.box, 2, 'levers');
-  if (!s.levers.reviewReplies) add('replies', REQUEST_TEXT.replies, 0.7, 'levers');
+  if (c.priceIndex > 1.08) add('price', REQUEST_TEXT.price, 3 * n.priceSensitivity, 'menu', {}, { ask: 'price' });
+  if (!s.levers.premiumCheese) add('cheese', REQUEST_TEXT.cheese, 1.5, 'levers', {}, { ask: 'cheese' });
+  if (!s.levers.freeCola && n.deliveryShare >= 0.5) add('cola', REQUEST_TEXT.cola, 1, 'levers', {}, { ask: 'cola' });
+  if (!s.levers.insulatedBox && c.seeds.some((r) => r.ch === 'delivery' && r.wait >= 45)) add('box', REQUEST_TEXT.box, 2, 'levers', {}, { ask: 'box' });
+  if (!s.levers.reviewReplies) add('replies', REQUEST_TEXT.replies, 0.7, 'levers', {}, { ask: 'replies' });
   const wish = PIZZA_IDS.filter((id) => !s.menuActive[id] && (n.prefs[id] ?? 0) >= 1.1);
-  if (wish.length > 0) add('menu', REQUEST_TEXT.menu, 2, 'menu', { menu: pizzaName(rng.pick(wish)) });
-  if (s.settings.closedDay !== null) add('closed', REQUEST_TEXT.closedDay, 1, 'shop', { day: DAY_NAMES[s.settings.closedDay] });
-  if (s.settings.closeHour <= 22 && (n.extraHours[22] ?? 0) >= 0.5) add('late', REQUEST_TEXT.late, 0.8, 'shop');
+  if (wish.length > 0) {
+    const menu = rng.pick(wish);
+    add('menu', REQUEST_TEXT.menu, 2, 'menu', { menu: pizzaName(menu) }, { ask: 'menu', menu });
+  }
+  if (s.settings.closedDay !== null) add('closed', REQUEST_TEXT.closedDay, 1, 'shop', { day: DAY_NAMES[s.settings.closedDay] }, { ask: 'closed' });
+  if (s.settings.closeHour <= 22 && (n.extraHours[22] ?? 0) >= 0.5) add('late', REQUEST_TEXT.late, 0.8, 'shop', {}, { ask: 'late' });
   add('local', REQUEST_TEXT.local[n.id], 1);
   if (opts.length === 0) return;
   const pick = rng.weighted(opts);
   const ch: Channel = rng.chance(n.deliveryShare) ? 'delivery' : 'hall';
-  pushMessage(s, { from: 'request', channel: ch, name: rng.pick(NICKNAMES[n.id][ch]), text: pick.text, tone: 'neutral', key: pick.key, action: pick.action });
+  pushMessage(s, {
+    from: 'request', channel: ch, name: rng.pick(NICKNAMES[n.id][ch]), text: pick.text, tone: 'neutral', key: pick.key, action: pick.action,
+    ...(pick.ask ? { ask: pick.ask, menu: pick.menu, replyBy: s.clock.day + REPLY_DAYS } : {}),
+  });
 }
 
 /** 영업 한 시간이 끝날 때: 리뷰, 재료 알림, 손님 요청 */
@@ -314,5 +347,5 @@ export function fromNews(n: NewsItem, hour: number): Omit<Message, 'id'> {
 export function initialMessages(news: NewsItem[], openingDay: boolean): MessageState {
   const items: Message[] = news.slice(-60).map((n, i) => ({ ...fromNews(n, 11), id: i + 1 }));
   if (openingDay) items.push({ id: items.length + 1, day: 0, hour: 11, from: 'owner', name: OWNER_NAME, text: OWNER_TEXT.open[0], tone: 'good' });
-  return { items, nextId: items.length + 1 };
+  return { items, nextId: items.length + 1, pending: [] };
 }

@@ -72,7 +72,7 @@ function hasGameShape(x: unknown): x is GameState {
     obj(s.menuActive) && obj(s.menuDeveloped) && Array.isArray(s.staff) && Array.isArray(s.applicants) &&
     obj(s.upgrades) && Array.isArray(s.groupOffers) && Array.isArray(s.groupOrders) && num(s.nextStaffId) &&
     allNums(s.owner, ['stress', 'daysWithoutRest', 'awayFrom', 'awayUntil']) && Array.isArray((s.owner as Record<string, unknown>).log) &&
-    obj(s.messages) && Array.isArray(s.messages.items) && num(s.messages.nextId)
+    obj(s.messages) && Array.isArray(s.messages.items) && num(s.messages.nextId) && Array.isArray(s.messages.pending)
   );
 }
 
@@ -120,6 +120,8 @@ function withExtras(x: Record<string, unknown>): Record<string, unknown> {
   if (!obj(out.messages)) {
     const items = obj(out.news) && Array.isArray(out.news.items) ? (out.news.items as NewsItem[]).filter((n) => obj(n) && typeof n.headline === 'string' && typeof n.id === 'string') : [];
     out = { ...out, messages: initialMessages(items, false) };
+  } else if (!Array.isArray(out.messages.pending)) {
+    out = { ...out, messages: { ...out.messages, pending: [] } };
   }
   return out;
 }

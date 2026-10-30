@@ -33,6 +33,7 @@ function Toast({ m, onOpen, onDone }: { m: Message; onOpen: () => void; onDone: 
         <span className="toast-name">
           {m.name}
           {m.stars !== undefined && <span className="stars" aria-label={`별 ${m.stars}개`}>{starText(m.stars)}</span>}
+          {m.ask && !m.reply && <span className="toast-tag">답장</span>}
         </span>
         <span className="toast-text">{m.text}</span>
       </span>

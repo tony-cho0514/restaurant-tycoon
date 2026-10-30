@@ -1,16 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BAD_TOPICS, TOPIC_HINT, TOPIC_LABEL, type Topic } from '../../content/messageTemplates';
 import type { Message, MessageAction, Sender } from '../../sim/messages';
+import { answerMessage, canReply, replyOptions } from '../../sim/replies';
 import { formatClock } from '../../sim/time';
 import type { GameState } from '../../sim/types';
 import { starText } from '../components/MessageToasts';
 import { messageIcon } from '../icons';
 import type { PanelProps } from './common';
 
-type Filter = 'all' | 'customer' | 'staff' | 'news' | 'owner' | 'important';
+type Filter = 'all' | 'reply' | 'customer' | 'staff' | 'news' | 'owner' | 'important';
 
-const FILTERS: { id: Filter; label: string; match: (m: Message) => boolean }[] = [
+const FILTERS: { id: Filter; label: string; match: (m: Message, s: GameState) => boolean }[] = [
   { id: 'all', label: '전체', match: () => true },
+  { id: 'reply', label: '답장', match: (m, s) => canReply(s, m) && m.reply?.id !== 'auto' },
   { id: 'customer', label: '손님', match: (m) => (['review', 'request', 'group'] as Sender[]).includes(m.from) },
   { id: 'staff', label: '직원', match: (m) => m.from === 'staff' },
   { id: 'news', label: '거래처·소식', match: (m) => m.from === 'supplier' || m.from === 'news' },
@@ -50,10 +52,44 @@ function Voices({ state }: { state: GameState }) {
   );
 }
 
-export function MessagesPanel({ state, onGoto }: PanelProps & { onGoto?: (tab: MessageAction) => void }) {
+/** 답장 고르기: 버튼마다 비용이 미리 보이고, 효과는 해 봐야 안다. */
+function ReplyBox({ m, state, update }: PanelProps & { m: Message }) {
+  const [err, setErr] = useState<string | null>(null);
+  const opts = replyOptions(state, m);
+  if (opts.length === 0) return null;
+  const left = (m.replyBy ?? state.clock.day) - state.clock.day;
+  return (
+    <div className="reply-box" role="group" aria-label={`${m.name}에게 답장`}>
+      <span className="reply-title">💬 답장 고르기 · {left === 0 ? '오늘까지' : `${left}일 남음`}</span>
+      {opts.map((o) => (
+        <button
+          key={o.id}
+          className="btn reply-btn"
+          disabled={!!o.disabled}
+          onClick={() => { try { update((s) => answerMessage(s, m.id, o.id)); setErr(null); } catch (e) { setErr((e as Error).message); } }}
+        >
+          <b>{o.label}</b>
+          <span className="reply-cost">{o.disabled ?? o.cost}</span>
+        </button>
+      ))}
+      {err && <span className="warn">{err}</span>}
+      <span className="note">효과는 해 봐야 알아요.</span>
+    </div>
+  );
+}
+
+export function MessagesPanel({ state, update, onGoto, focusId = null }: PanelProps & { onGoto?: (tab: MessageAction) => void; focusId?: number | null }) {
   const [filter, setFilter] = useState<Filter>('all');
+  // 말풍선을 눌러 들어오면 그 메시지로 스크롤
+  useEffect(() => {
+    if (focusId === null) return;
+    setFilter('all');
+    const id = requestAnimationFrame(() => document.getElementById(`msg-${focusId}`)?.scrollIntoView?.({ block: 'center' }));
+    return () => cancelAnimationFrame(id);
+  }, [focusId]);
   const match = FILTERS.find((f) => f.id === filter)!.match;
-  const shown = [...state.messages.items].reverse().filter(match);
+  const shown = [...state.messages.items].reverse().filter((m) => match(m, state));
+  const waiting = state.messages.items.filter((m) => canReply(state, m) && m.reply?.id !== 'auto').length;
   const days: { day: number; items: Message[] }[] = [];
   for (const m of shown) {
     if (days.at(-1)?.day !== m.day) days.push({ day: m.day, items: [] });
@@ -64,6 +100,9 @@ export function MessagesPanel({ state, onGoto }: PanelProps & { onGoto?: (tab: M
     <div className="panel">
       <h3>메시지</h3>
       <Voices state={state} />
+      {waiting > 0 && filter !== 'reply' && (
+        <button className="btn waiting" onClick={() => setFilter('reply')}>💬 답장 기다리는 메시지 {waiting}개</button>
+      )}
       <div className="msg-filters" role="group" aria-label="보낸 쪽 고르기">
         {FILTERS.map((f) => (
           <button key={f.id} className="btn mini" aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>{f.label}</button>
@@ -75,7 +114,7 @@ export function MessagesPanel({ state, onGoto }: PanelProps & { onGoto?: (tab: M
           <h4 className="msg-day-title">{dayText(d.day)}</h4>
           <ul className="msgs">
             {d.items.map((m) => (
-              <li key={m.id} className={`msg from-${m.from} tone-${m.tone}${m.from === 'owner' ? ' mine' : ''}`}>
+              <li key={m.id} id={`msg-${m.id}`} className={`msg from-${m.from} tone-${m.tone}${m.from === 'owner' ? ' mine' : ''}${m.id === focusId ? ' focus' : ''}`}>
                 <span className="msg-avatar" aria-hidden="true">{messageIcon(m)}</span>
                 <div className="msg-bubble">
                   <div className="msg-meta">
@@ -87,6 +126,8 @@ export function MessagesPanel({ state, onGoto }: PanelProps & { onGoto?: (tab: M
                   </div>
                   <p className="msg-text">{m.text}</p>
                   {m.detail && <p className="msg-detail">{m.detail}</p>}
+                  {m.reply && <p className="msg-reply"><b>↳ 내 답장</b> {m.reply.text}</p>}
+                  <ReplyBox m={m} state={state} update={update} />
                   {m.action && onGoto && <button className="btn mini" onClick={() => onGoto(m.action!)}>{ACTION_LABEL[m.action]}</button>}
                 </div>
               </li>

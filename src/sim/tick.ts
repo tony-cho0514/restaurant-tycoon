@@ -15,6 +15,7 @@ import { fallbackUsage } from './newGame';
 import { pruneOrders, type OrderRecord } from './orders';
 import { dailyLabor } from './labor';
 import { absenceMessages, dayEndMessage, fromNews, hourMessages, pushMessage, tiredMessage, type ReviewSeed } from './messages';
+import { dayEndFollowUps, dueCoupons, settleCoupons } from './replies';
 import { announceMinWage, applyMinWage, dailyFlavor, demandShock, fireDue, planWeek, shockMultiplier, type NewsItem } from './news';
 import { satisfaction, updateRating, type Channel } from './ratings';
 import { Rng } from './rng';
@@ -141,10 +142,13 @@ function serveOrders(s: GameState, rng: Rng, anim: AnimEvents) {
   // 단체 주문을 먼저 만들고, 남은 일손으로 손님을 받는다.
   const groupMade = fulfillGroupsAt(s, capacityAt(s, s.clock.hour));
   anim.pizzasBaked += groupMade;
+  // 쿠폰 받고 다시 오는 손님은 평소 손님에 더해진다.
+  const coupons = dueCoupons(s, hour);
+  const extra = (ch: Channel) => coupons.filter((c) => c.channel === ch).length;
   // 홀은 자리만큼만 받는다(넘친 손님은 그냥 돌아감).
-  const hallArrivals = rng.poisson(exp.hall * signMult(s));
+  const hallArrivals = rng.poisson(exp.hall * signMult(s)) + extra('hall');
   const seatLost = Math.max(0, hallArrivals - Math.floor(hallSeatCap(s)));
-  const served = serveHour(hallArrivals - seatLost, rng.poisson(exp.delivery), Math.max(0, capacityAt(s, s.clock.hour) - groupMade));
+  const served = serveHour(hallArrivals - seatLost, rng.poisson(exp.delivery) + extra('delivery'), Math.max(0, capacityAt(s, s.clock.hour) - groupMade));
   s.today.lostOrders += served.lost + seatLost;
   anim.lostOrders += served.lost + seatLost;
   const hallBonus = interiorBonus(s) + kindnessBonus(s, s.clock.hour) + moodBonus(s, hour);
@@ -247,6 +251,7 @@ function serveOrders(s: GameState, rng: Rng, anim: AnimEvents) {
   for (let i = 0; i < served.servedHall; i++) serveOne('hall');
   for (let i = 0; i < served.servedDelivery; i++) serveOne('delivery');
   anim.stockouts = [...stockouts];
+  settleCoupons(s, coupons, seeds);
   hourMessages(s, {
     seeds, priceIndex: pIndex, hallBonus, mood: moodBonus(s, hour), stockouts: anim.stockouts,
     staffNames: staffWorking(s, hour).map((x) => x.name), usage: estimatedUsage(s),
@@ -320,6 +325,7 @@ function closeDayInPlace(s: GameState, pauses: PauseReason[], closed: boolean) {
   const record = !closed && s.ledger.days.length >= 7 && revenue > Math.max(...s.ledger.days.map((d) => d.revenueHall + d.revenueDelivery));
   ownerEvening(s, closed, record);
   dayEndMessage(s, closed, record);
+  dayEndFollowUps(s);
   s.ledger = closeDay(s.ledger, s.today);
   s.orders = pruneOrders(s.orders, s.clock.day);
   if (cal.dayOfMonth === 27) {

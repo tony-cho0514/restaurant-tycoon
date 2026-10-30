@@ -357,3 +357,13 @@ body { touch-action: manipulation; padding: env(safe-area-inset-top) env(safe-ar
 .msg-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; }
 .msg-text { margin: 0; font-size: 15px; }
 .msg-detail { margin: 0; font-size: 13px; color: var(--ink-soft); }
+/* 답장 */
+.waiting { align-self: flex-start; border-color: var(--tomato); color: var(--tomato-deep); font-weight: 700; }
+.msg.focus .msg-bubble { box-shadow: 0 0 0 3px rgba(217, 165, 33, 0.55); }
+.msg-reply { margin: 0; padding: 6px 10px; border-radius: 10px; background: #eef4de; font-size: 14px; }
+.reply-box { display: flex; flex-direction: column; gap: 6px; width: 100%; padding-top: 6px; border-top: 1px dashed var(--line); }
+.reply-title { font-size: 13px; font-weight: 700; color: var(--tomato-deep); }
+.reply-btn { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 8px 12px; }
+.reply-btn:disabled { opacity: 0.55; }
+.reply-cost { font-size: 13px; color: var(--ink-soft); font-weight: 400; }
+.toast-tag { padding: 0 6px; border-radius: 8px; background: var(--tomato); color: #fff; font-size: 11px; }

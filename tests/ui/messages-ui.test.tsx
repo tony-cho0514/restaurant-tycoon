@@ -50,6 +50,7 @@ test('메시지 탭: 최근 리뷰 요약·보낸 쪽 고르기·바로 가기',
       msg(5, { day: 3, from: 'owner', name: '사장님(나)', text: '오늘 장사 끝!', channel: undefined }),
     ],
     nextId: 6,
+    pending: [],
   };
   const onGoto = vi.fn();
   render(<MessagesPanel state={s} update={() => {}} onGoto={onGoto} />);
@@ -80,4 +81,37 @@ test('뉴스 탭 자리에 메시지 탭이 있고, 안 읽은 메시지 수가 
   fireEvent.click(tab);
   expect(within(screen.getByRole('tab', { name: /메시지/ })).queryByLabelText(/새 메시지/)).toBeNull();
   expect(screen.getByRole('heading', { name: '메시지' })).toBeTruthy();
+});
+
+test('나쁜 리뷰에 답장: 버튼에 비용이 보이고, 고르면 내 답장이 달린다', () => {
+  let s: GameState = { ...g(), clock: { day: 3, hour: 15 } };
+  s.messages = {
+    items: [
+      msg(1, { day: 3, stars: 1, topic: 'cold', text: '다 식었어요', tone: 'bad', ask: 'review', replyBy: 6, hit: 0.09 }),
+      msg(2, { day: 3, from: 'request', name: '새내기22', text: '치즈 추가 되나요?', ask: 'cheese', replyBy: 6 }),
+      msg(3, { day: 3, stars: 5, text: '맛있어요', tone: 'good' }),
+    ],
+    nextId: 4,
+    pending: [],
+  };
+  const update = (fn: (x: GameState) => GameState) => { s = fn(s); };
+  const { rerender } = render(<MessagesPanel state={s} update={update} />);
+  fireEvent.click(screen.getByRole('button', { name: /답장 기다리는 메시지 2개/ }));
+  expect(screen.queryByText('맛있어요')).toBeNull();
+
+  const box = screen.getByRole('group', { name: '야식러에게 답장' });
+  expect(within(box).getByRole('button', { name: /사과 \+ 쿠폰.*3,000원/ })).toBeTruthy();
+  expect(screen.getByRole('button', { name: /프리미엄 치즈 켜기.*이익률/ })).toBeTruthy();
+  fireEvent.click(within(box).getByRole('button', { name: /사과 답글/ }));
+  expect(s.messages.items[0].reply?.id).toBe('apology');
+  rerender(<MessagesPanel state={s} update={update} />);
+  fireEvent.click(screen.getByRole('button', { name: '전체' }));
+  expect(screen.getByText('↳ 내 답장')).toBeTruthy();
+  expect(screen.queryByRole('group', { name: '야식러에게 답장' })).toBeNull();
+});
+
+test('답장할 수 있는 메시지는 말풍선에 「답장」 표시가 붙는다', () => {
+  const { rerender } = render(<MessageToasts items={[]} onOpen={() => {}} />);
+  rerender(<MessageToasts items={[msg(1, { ask: 'review', stars: 1 }), msg(2)]} onOpen={() => {}} />);
+  expect(screen.getAllByText('답장')).toHaveLength(1);
 });

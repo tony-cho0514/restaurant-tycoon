@@ -35,10 +35,10 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'messages', label: '메시지' },
 ];
 
-function ActivePanel({ tab, onGoto, ...p }: PanelProps & { tab: TabId; onGoto: (tab: TabId) => void }) {
+function ActivePanel({ tab, onGoto, focusId, ...p }: PanelProps & { tab: TabId; onGoto: (tab: TabId) => void; focusId: number | null }) {
   switch (tab) {
     case 'status': return <StatusPanel {...p} />;
-    case 'messages': return <MessagesPanel {...p} onGoto={onGoto} />;
+    case 'messages': return <MessagesPanel {...p} onGoto={onGoto} focusId={focusId} />;
     case 'menu': return <MenuPanel {...p} />;
     case 'inventory': return <InventoryPanel {...p} />;
     case 'levers': return <LeversPanel {...p} />;
@@ -62,6 +62,8 @@ export function Main({ initial, now = Date.now, persist, saveFailed = false, onR
   const lastMsgId = pb.state.messages.items.at(-1)?.id ?? 0;
   // 메시지 탭을 마지막으로 본 뒤 온 메시지 수(처음 열 때는 0)
   const [readId, setReadId] = useState(lastMsgId);
+  // 말풍선을 눌러 메시지 탭으로 가면 그 메시지를 보여 준다
+  const [focusMsg, setFocusMsg] = useState<number | null>(null);
   useEffect(() => {
     if (tab === 'messages') setReadId(lastMsgId);
   }, [tab, lastMsgId]);
@@ -91,7 +93,7 @@ export function Main({ initial, now = Date.now, persist, saveFailed = false, onR
             tables={tableCount(pb.state)}
             staff={(ownerWorking(pb.state, pb.state.clock.hour) ? 1 : 0) + staffWorking(pb.state, pb.state.clock.hour).length}
           />
-          <MessageToasts items={pb.state.messages.items} muted={tab === 'messages'} onOpen={() => setTab('messages')} />
+          <MessageToasts items={pb.state.messages.items} muted={tab === 'messages'} onOpen={(m) => { setTab('messages'); setFocusMsg(m.id); }} />
         </div>
         <PlaybackBar
           state={pb.state}
@@ -113,7 +115,7 @@ export function Main({ initial, now = Date.now, persist, saveFailed = false, onR
           ))}
         </nav>
         <div className="panel-body">
-          <ActivePanel tab={tab} state={pb.state} update={pb.update} onGoto={setTab} />
+          <ActivePanel tab={tab} state={pb.state} update={pb.update} onGoto={setTab} focusId={focusMsg} />
         </div>
       </section>
       {pb.pauses[0] && (
