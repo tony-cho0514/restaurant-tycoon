@@ -34,6 +34,7 @@ export function NewGame({ onStart, onImport, notice }: {
       {notice && <div className="notice card" role="alert">{notice}</div>}
       <header className="newgame-head">
         <h1>피자집 경영</h1>
+        <p className="newgame-pitch">손으로 피자를 굽는 게임이 아니에요. 사장이 되어 가격·재료·사람을 정하고, 위기를 버텨 보는 경영 게임이에요.</p>
         <p>어디에 첫 가게를 열까요?</p>
         {onImport && (
           <div className="import-row">

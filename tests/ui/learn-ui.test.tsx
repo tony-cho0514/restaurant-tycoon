@@ -19,6 +19,11 @@ test('배움 탭: 최근 부검 리포트에 원인별 몫·핵심 지표·힌�
   const parts = within(r).getByRole('list', { name: '원인별 몫' });
   expect(within(parts).getAllByRole('listitem').length).toBeGreaterThan(1);
   expect(within(r).getByText(/몫을 모두 더하면 이익 변화/)).toBeTruthy();
+  // 맨 위엔 한 줄 결론과 가장 크게 움직인 곳만, 지표 표는 눌러야 펼쳐진다
+  expect(r.querySelector('.report-headline')!.textContent).toMatch(/지난달보다 [\d,.]+만 원 (더|덜) 벌었어요|지난달과 거의 같아요/);
+  expect(within(r).getByText(/가장 크게 움직인 곳/)).toBeTruthy();
+  expect(within(r).queryByRole('table')).toBeNull();
+  fireEvent.click(within(r).getByRole('button', { name: /더 보기/ }));
   expect(within(r).getByRole('table')).toBeTruthy();
   expect(within(r).getByText('손익분기점(하루 주문)')).toBeTruthy();
   expect(r.textContent).toContain('💡');

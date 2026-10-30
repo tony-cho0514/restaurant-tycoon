@@ -399,3 +399,46 @@ body { touch-action: manipulation; padding: env(safe-area-inset-top) env(safe-ar
 .pace { margin: 0; padding: 8px 12px; border-radius: 10px; font-weight: 700; font-size: 15px; }
 .pace.down { background: #f7d4cf; color: var(--bad); }
 .pace.up { background: #e3efd2; color: var(--good); }
+
+/* 첫 10분 안내: 지금 목표 한 줄, 새로 열린 탭 */
+.goal-line {
+  display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px;
+  background: #fff4d6; border: 1px solid var(--gold); color: var(--ink); font-size: 15px; font-weight: 600;
+  animation: goal-in 0.4s ease-out;
+}
+.goal-tag { flex: none; font-size: 13px; color: var(--wood); font-weight: 700; }
+@keyframes goal-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.tab-new {
+  position: absolute; top: 2px; left: 4px; padding: 0 5px; height: 16px; border-radius: 8px;
+  background: var(--gold); color: #fff; font-size: 10px; font-weight: 700; line-height: 16px;
+  animation: goal-in 0.4s ease-out;
+}
+@media (prefers-reduced-motion: reduce) { .goal-line, .tab-new { animation: none; } }
+.newgame-pitch { max-width: 560px; margin: 4px auto 8px; font-size: 15px; color: var(--ink-soft); }
+
+/* 저장 지키기: 홈 화면 추가 안내, 백업 알림 */
+.save-guard {
+  position: fixed; left: 50%; bottom: calc(12px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+  z-index: 55; width: min(520px, calc(100vw - 24px)); display: flex; flex-direction: column; gap: 6px;
+  box-shadow: 0 8px 24px rgba(43, 35, 32, 0.2);
+}
+.save-guard p { margin: 0; }
+.home-steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
+.save-guard-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.settings-toggle { position: relative; }
+.settings-toggle .dot { position: absolute; top: 4px; right: 4px; width: 9px; height: 9px; border-radius: 50%; background: var(--tomato); }
+
+/* 부검 리포트 맨 위: 20초 요약 */
+.report-lead { background: #fff4d6; border: 1px solid var(--gold); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+.report-lead p { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.report-headline { font-size: 17px; font-weight: 700; }
+.part-go { margin-left: 6px; padding: 2px 8px; font-size: 12px; }
+
+/* 한 주 고정비·버틸 수 있는 기간 */
+.runway { margin-top: 8px; padding: 8px 12px; border-radius: 12px; background: #fff; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 2px; }
+.runway p { margin: 0; }
+.runway.tight { border-color: var(--bad); background: #fdeeea; }
+
+/* 지난주 결과 칸(공유용) */
+.week-share { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.week-squares { font-size: 18px; letter-spacing: 1px; }

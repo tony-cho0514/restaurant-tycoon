@@ -21,7 +21,7 @@ const FILTERS: { id: Filter; label: string; match: (m: Message, s: GameState) =>
 ];
 
 const ACTION_LABEL: Record<MessageAction, string> = {
-  menu: '메뉴 보기', inventory: '재고 보기', levers: '운영 수단 보기', shop: '가게 보기', staff: '직원 보기', ledger: '장부 보기', learn: '배움 탭 보기',
+  menu: '메뉴 보기', inventory: '재고 보기', levers: '운영 수단 보기', shop: '가게 보기', staff: '직원 보기', ledger: '장부 보기', learn: '배움 탭 보기', sales: '매출 보기',
 };
 
 const dayText = (day: number) => formatClock({ day, hour: 0 }).replace(/ \d+시$/, '');

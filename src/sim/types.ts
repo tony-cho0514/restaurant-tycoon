@@ -9,6 +9,7 @@ import type { NeighborhoodId } from './neighborhoods';
 import type { NewsState } from './news';
 import type { LearningState } from './learning';
 import type { LocalState } from './localEvents';
+import type { GuideState } from './guide';
 import type { MessageState } from './messages';
 import type { OwnerState } from './owner';
 import type { OrderRecord } from './orders';
@@ -70,6 +71,8 @@ export interface GameState {
   learning: LearningState;
   /** 동네 사정: 공사·경쟁 가게·배달앱 노출 하락 */
   local: LocalState;
+  /** 첫 10분 안내: 열린 탭, 눌러 본 탭, 첫 주 목표 */
+  guide: GuideState;
 }
 
 export interface Settings {

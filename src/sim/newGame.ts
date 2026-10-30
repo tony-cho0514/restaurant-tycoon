@@ -6,6 +6,7 @@ import { DEFAULT_RULES, autoReorder, emptyInventory } from './inventory';
 import { emptyDay } from './ledger';
 import { initialLearning } from './learning';
 import { initialLocal } from './localEvents';
+import { initialGuide } from './guide';
 import { initialMessages } from './messages';
 import { MENU, activePizzas, defaultMenuActive, type MenuActive, type MenuItemId } from './menu';
 import { initialOwner } from './owner';
@@ -90,5 +91,6 @@ export function createNewGame(o: { seed: number; neighborhoodId: NeighborhoodId;
     messages: initialMessages(news.items, true),
     learning: initialLearning(),
     local: initialLocal(),
+    guide: initialGuide(),
   };
 }

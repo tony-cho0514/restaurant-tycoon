@@ -1,4 +1,5 @@
 import { CHARGE_TICKS_PER_REAL_DAY, accrueCharge } from '../../sim/charge';
+import type { TabKey } from '../../sim/guide';
 import { profitOf } from '../../sim/ledger';
 import type { PauseReason } from '../../sim/tick';
 import type { GameState } from '../../sim/types';
@@ -12,7 +13,7 @@ function dayText(day: number, today: number): string {
   return d === 0 ? '오늘' : d === 1 ? '내일' : d === 2 ? '모레' : `${d}일 뒤`;
 }
 
-export type TabId = 'status' | 'sales' | 'menu' | 'inventory' | 'staff' | 'shop' | 'levers' | 'ledger' | 'messages' | 'learn';
+export type TabId = TabKey;
 
 const MS_PER_CHARGE_TICK = 86_400_000 / CHARGE_TICKS_PER_REAL_DAY;
 

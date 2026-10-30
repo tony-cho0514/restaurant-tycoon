@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { CARDS, CARD_IDS } from '../../content/dexCards';
 import type { MonthReport } from '../../sim/learning';
-import type { Kpi } from '../../sim/report';
+import type { TabKey } from '../../sim/guide';
+import type { Kpi, PartKey, ReportPart } from '../../sim/report';
 import { calendar } from '../../sim/time';
 import type { GameState } from '../../sim/types';
 import { manwon, won } from '../format';
@@ -13,6 +14,32 @@ const shortDay = (day: number) => {
   return `${c.month}/${c.dayOfMonth + 1}`;
 };
 const pctText = (x: number) => `${(x * 100).toFixed(1)}%`;
+
+/** 몫마다 손볼 수 있는 탭(「고치러 가기」) */
+const PART_TAB: Record<PartKey, TabKey> = {
+  revenue: 'menu', perOrder: 'menu', volume: 'sales', group: 'sales',
+  food: 'inventory', ingredients: 'inventory', waste: 'inventory',
+  fees: 'shop', rentUtil: 'shop', investment: 'shop',
+  service: 'levers', ads: 'levers', labor: 'staff',
+};
+const TAB_NAME: Record<TabKey, string> = {
+  status: '현황', sales: '매출·주문', menu: '메뉴', inventory: '재고', staff: '직원', shop: '가게', levers: '운영 수단', ledger: '장부', messages: '메시지', learn: '배움',
+};
+
+/** 가장 크게 움직인 몫: 달라진 달은 절댓값이 가장 큰 것, 첫 달은 돈이 가장 많이 나간 곳 */
+export function topPart(r: MonthReport): ReportPart | null {
+  const pool = r.mode === 'change' ? r.parts : r.parts.filter((p) => p.amount < 0);
+  return pool.reduce<ReportPart | null>((a, p) => (!a || Math.abs(p.amount) > Math.abs(a.amount) ? p : a), null);
+}
+
+/** 사장님 목소리 한 줄 결론 */
+export function headline(r: MonthReport): string {
+  if (r.prevProfit === null) return r.profit >= 0 ? `첫 달, ${manwon(r.profit)} 남겼어요! 🎉` : `첫 달은 ${manwon(-r.profit)} 적자예요. 어디서 샜는지 볼까요?`;
+  const diff = r.profit - r.prevProfit;
+  const tail = r.profit < 0 ? ' 이번 달은 적자예요.' : '';
+  if (Math.abs(diff) < 10_000) return `지난달과 거의 같아요.${tail}`;
+  return diff > 0 ? `지난달보다 ${manwon(diff)} 더 벌었어요 😊${tail}` : `지난달보다 ${manwon(-diff)} 덜 벌었어요 😓${tail}`;
+}
 
 const KPI_ROWS: { label: string; get: (k: Kpi) => string }[] = [
   { label: '원가율(재료비 ÷ 매출)', get: (k) => pctText(k.costRate) },
@@ -38,7 +65,9 @@ function Hint({ r }: { r: MonthReport }) {
   );
 }
 
-function ReportView({ r }: { r: MonthReport }) {
+function ReportView({ r, onGoto }: { r: MonthReport; onGoto?: (t: TabKey) => void }) {
+  const [more, setMore] = useState(false);
+  const top = topPart(r);
   const max = Math.max(1, ...r.parts.map((p) => Math.abs(p.amount)));
   const diff = r.prevProfit === null ? null : r.profit - r.prevProfit;
   const k = r.kpi;
@@ -48,13 +77,25 @@ function ReportView({ r }: { r: MonthReport }) {
         {r.label} 이익 <span className={r.profit < 0 ? 'neg' : ''}>{manwon(r.profit)}</span>
         {diff !== null && <span className={`sub ${diff < 0 ? 'neg' : ''}`}> (지난달보다 {diff >= 0 ? '+' : '−'}{manwon(Math.abs(diff))})</span>}
       </h4>
+      <div className="report-lead">
+        <p className="report-headline">{headline(r)}</p>
+        {top && (
+          <p>
+            {r.mode === 'change' ? '가장 크게 움직인 곳' : '돈이 가장 많이 나간 곳'}: <b>{top.label}</b> {signed(top.amount)}
+            {onGoto && <button className="btn mini primary" onClick={() => onGoto(PART_TAB[top.key])}>{TAB_NAME[PART_TAB[top.key]]}에서 손보기 →</button>}
+          </p>
+        )}
+      </div>
       <Hint r={r} />
 
       <h4>{r.mode === 'change' ? '🔍 왜 달라졌나' : '🔍 이번 달 돈이 어디로 갔나'}</h4>
       <ul className="parts" aria-label="원인별 몫">
         {r.parts.map((p) => (
           <li key={p.key} className={`part ${p.amount < 0 ? 'down' : 'up'}`}>
-            <div className="part-head"><span>{p.label}</span><b>{signed(p.amount)}</b></div>
+            <div className="part-head">
+              <span>{p.label}</span><b>{signed(p.amount)}</b>
+              {onGoto && <button className="btn mini part-go" aria-label={`${p.label}: ${TAB_NAME[PART_TAB[p.key]]} 탭으로`} onClick={() => onGoto(PART_TAB[p.key])}>{TAB_NAME[PART_TAB[p.key]]} →</button>}
+            </div>
             <span className="part-bar"><span style={{ width: `${(Math.abs(p.amount) / max) * 100}%` }} /></span>
             {p.detail && <span className="sub">{p.detail}</span>}
           </li>
@@ -69,6 +110,14 @@ function ReportView({ r }: { r: MonthReport }) {
         <p className="report-lost">🕳️ 놓친 기회: 일손 부족 {r.lost.staff}건 · 재료 부족 {r.lost.stock}건 ≈ 이익 {manwon(r.lost.value)} (장부엔 안 보여요)</p>
       )}
 
+      {(r.events.length > 0) && <h4>🗓️ 이번 달 있었던 일</h4>}
+      {r.events.length > 0 && (
+        <ul className="report-list">
+          {r.events.map((e, i) => <li key={i} className={`tone-${e.tone}`}><span className="sub">{shortDay(e.day)}</span> {e.text}</li>)}
+        </ul>
+      )}
+      <button className="btn mini" aria-expanded={more} onClick={() => setMore((v) => !v)}>{more ? '접기' : '📏 핵심 지표·내가 바꾼 것 더 보기'}</button>
+      {more && (<>
       <h4>📏 핵심 지표</h4>
       <table className="kpi">
         <thead><tr><th></th>{r.prevKpi && <th>지난달</th>}<th>이번 달</th></tr></thead>
@@ -84,15 +133,10 @@ function ReportView({ r }: { r: MonthReport }) {
         </p>
       )}
 
-      {(r.events.length > 0 || r.decisions.length > 0) && <h4>🗓️ 이번 달 있었던 일</h4>}
-      {r.events.length > 0 && (
-        <ul className="report-list">
-          {r.events.map((e, i) => <li key={i} className={`tone-${e.tone}`}><span className="sub">{shortDay(e.day)}</span> {e.text}</li>)}
-        </ul>
-      )}
       {r.decisions.length > 0 && (
         <>
-          <p className="sub">내가 바꾼 것(앞뒤 일주일 하루 주문, 날씨·경기 같은 다른 이유도 섞여 있어요)</p>
+          <h4>✍️ 내가 바꾼 것</h4>
+          <p className="sub">(앞뒤 일주일 하루 주문, 날씨·경기 같은 다른 이유도 섞여 있어요)</p>
           <ul className="report-list">
             {r.decisions.map((d, i) => (
               <li key={i}>
@@ -106,11 +150,12 @@ function ReportView({ r }: { r: MonthReport }) {
       {r.voices.count > 0 && (
         <p className="sub">💬 리뷰 {r.voices.count}개 · 평균 ★ {r.voices.avg!.toFixed(1)}{r.voices.top && ` · 많이 나온 불만 ${r.voices.top}`}</p>
       )}
+      </>)}
     </article>
   );
 }
 
-function Reports({ state }: { state: GameState }) {
+function Reports({ state, onGoto }: { state: GameState; onGoto?: (t: TabKey) => void }) {
   const reports = state.learning.reports;
   const [sel, setSel] = useState<number | null>(null);
   const r = reports.find((x) => x.monthIndex === sel) ?? reports.at(-1);
@@ -125,7 +170,7 @@ function Reports({ state }: { state: GameState }) {
           ))}
         </div>
       )}
-      {r && <ReportView r={r} />}
+      {r && <ReportView r={r} onGoto={onGoto} />}
       {shocks.length > 0 && (
         <>
           <h4>🌪️ 위기·기회 리포트</h4>
@@ -169,7 +214,7 @@ function Dex({ state }: { state: GameState }) {
   );
 }
 
-export function LearnPanel({ state }: PanelProps) {
+export function LearnPanel({ state, onGoto }: PanelProps & { onGoto?: (t: TabKey) => void }) {
   const [view, setView] = useState<'report' | 'dex'>('report');
   const got = CARD_IDS.filter((id) => state.learning.dex[id]).length;
   return (
@@ -179,7 +224,7 @@ export function LearnPanel({ state }: PanelProps) {
         <button className="btn mini" aria-pressed={view === 'report'} onClick={() => setView('report')}>📊 부검 리포트</button>
         <button className="btn mini" aria-pressed={view === 'dex'} onClick={() => setView('dex')}>📚 도감 {got}/{CARD_IDS.length}</button>
       </div>
-      {view === 'report' ? <Reports state={state} /> : <Dex state={state} />}
+      {view === 'report' ? <Reports state={state} onGoto={onGoto} /> : <Dex state={state} />}
     </div>
   );
 }

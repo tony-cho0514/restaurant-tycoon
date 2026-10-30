@@ -16,6 +16,7 @@ import { pruneOrders, type OrderRecord } from './orders';
 import { dailyLabor } from './labor';
 import { absenceMessages, dayEndMessage, fromNews, hourMessages, pushMessage, tiredMessage, type ReviewSeed } from './messages';
 import { dayEndLearning, monthEndLearning, startShock } from './learning';
+import { checkGuide } from './guide';
 import { MONSOON_DELIVERY_DELAY, inMonsoon, localDemand, localEvening, localEventsIn, localMorning, monsoonRain, planLocalWeek } from './localEvents';
 import { dayEndFollowUps, dueCoupons, settleCoupons } from './replies';
 import { announceMinWage, applyMinWage, dailyFlavor, demandShock, fireDue, planWeek, shockMultiplier, type NewsItem } from './news';
@@ -420,6 +421,8 @@ export function advanceTickInPlace(s: GameState): { pauses: PauseReason[]; anim:
   if (dayOver) goToNextDay(s);
   else s.clock = nextTick(s.clock, s.settings);
   s.rngState = rng.state;
+  const guided = checkGuide(s);
+  if (guided !== s) Object.assign(s, guided);
   return { pauses, anim };
 }
 

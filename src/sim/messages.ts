@@ -18,7 +18,7 @@ import type { GameState } from './types';
 export type { Topic };
 export type Sender = 'review' | 'request' | 'group' | 'staff' | 'supplier' | 'news' | 'owner' | 'book';
 /** 메시지에서 바로 가 볼 탭 */
-export type MessageAction = 'menu' | 'inventory' | 'levers' | 'shop' | 'staff' | 'ledger' | 'learn';
+export type MessageAction = 'menu' | 'inventory' | 'levers' | 'shop' | 'staff' | 'ledger' | 'learn' | 'sales';
 /** 답장을 받을 수 있는 메시지: 나쁜 리뷰, 손님 요청(무엇을 바라는지) */
 export type Ask = 'review' | 'price' | 'cheese' | 'cola' | 'box' | 'replies' | 'menu' | 'closed' | 'late';
 export type ReplyId = 'auto' | 'apology' | 'coupon' | 'rebut' | 'accept' | 'develop' | 'promise' | 'decline';
