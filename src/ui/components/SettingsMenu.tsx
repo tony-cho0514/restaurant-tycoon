@@ -61,7 +61,7 @@ export function SettingsMenu({ state, onReplace, onReset }: {
           <button className="btn" aria-pressed={sound} onClick={() => { setSoundOn(!sound); setSound(!sound); }}>{sound ? '🔊 효과음 켜짐' : '🔇 효과음 꺼짐'}</button>
           <button className="btn danger" onClick={reset}>처음부터 다시</button>
           {message && <p className="sub" role="status">{message}</p>}
-          <p className="credit">3D 소재: Kenney (kenney.nl, CC0)</p>
+          <p className="credit">3D 모형·효과음: Kenney (kenney.nl, CC0)</p>
         </div>
       )}
     </div>
