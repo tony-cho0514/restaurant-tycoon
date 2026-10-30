@@ -9,6 +9,8 @@ import { MessageToasts } from '../components/MessageToasts';
 import { PauseModal, type TabId } from '../components/PauseModal';
 import { PlaybackBar } from '../components/PlaybackBar';
 import { SaveGuard } from '../components/SaveGuard';
+import { CatchUpModal } from '../components/CatchUpModal';
+import type { CatchUpSummary } from '../../sim/catchUp';
 import { ClosedShop } from './ClosedShop';
 import { SettingsMenu } from '../components/SettingsMenu';
 import { ShopScene, moodOf } from '../components/ShopScene';
@@ -68,6 +70,7 @@ export function Main({ initial, now = Date.now, persist, saveFailed = false, onR
   const pb = usePlayback(initial, { now, persist });
   const [tab, setTab] = useState<TabId>('status');
   const guide = pb.state.guide;
+  const [skipView, setSkipView] = useState<'ask' | CatchUpSummary | null>(null);
   // 탭을 누르거나 메시지·멈춤 창에서 바로 가면, 아직 안 열린 탭도 열고 「새로」 표시를 지운다
   const goto = (t: TabId) => { setTab(t); pb.update((s) => openTab(s, t)); };
   const [clockNow, setClockNow] = useState(now());
@@ -117,7 +120,7 @@ export function Main({ initial, now = Date.now, persist, saveFailed = false, onR
   return (
     <main className="main">
       {saveFailed && <div className="save-warning" role="alert">저장 공간이 부족해요. 설정에서 저장 파일을 내보내 두세요.</div>}
-      {!pb.playing && !pb.pauses[0] && <SaveGuard state={pb.state} now={clockNow} />}
+      {!pb.playing && !pb.pauses[0] && !skipView && <SaveGuard state={pb.state} now={clockNow} />}
       <section className="stage">
         <div className="shop-title">
           <strong>{pb.state.shopName}</strong>
@@ -142,6 +145,7 @@ export function Main({ initial, now = Date.now, persist, saveFailed = false, onR
           onPlay={pb.play}
           onStop={pb.stop}
           onSpeed={pb.setSpeed}
+          onSkip={() => setSkipView('ask')}
         />
         {guide.goal && (
           <div className="goal-line" role="status" key={guide.goal}>
@@ -163,7 +167,16 @@ export function Main({ initial, now = Date.now, persist, saveFailed = false, onR
           <ActivePanel tab={tab} state={pb.state} update={pb.update} onGoto={goto} focusId={focusMsg} />
         </div>
       </section>
-      {pb.pauses[0] && (
+      {skipView && (
+        <CatchUpModal
+          view={skipView}
+          state={pb.state}
+          onRun={() => setSkipView(pb.skip())}
+          onClose={() => setSkipView(null)}
+          onGoto={(t) => { setSkipView(null); goto(t); }}
+        />
+      )}
+      {!skipView && pb.pauses[0] && (
         <PauseModal
           reason={pb.pauses[0]}
           state={pb.state}

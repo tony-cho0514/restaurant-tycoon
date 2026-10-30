@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { whatIf, whatIfOptions, type MonthRun } from '../../sim/whatIf';
+import { loadMonthStart } from '../monthSnapshots';
 import { CARDS, CARD_IDS } from '../../content/dexCards';
 import type { MonthReport } from '../../sim/learning';
 import type { YearReport } from '../../sim/yearEnd';
@@ -67,7 +69,33 @@ function Hint({ r }: { r: MonthReport }) {
   );
 }
 
-function ReportView({ r, onGoto }: { r: MonthReport; onGoto?: (t: TabKey) => void }) {
+/** 지난달 다시 돌려 보기: 그 달 첫날로 돌아가 하나만 바꿔 한 달을 다시 돌린다 */
+function WhatIf({ r, createdAt }: { r: MonthReport; createdAt: number }) {
+  const start = useMemo(() => loadMonthStart(createdAt, r.monthIndex), [createdAt, r.monthIndex]);
+  const [result, setResult] = useState<{ label: string; base: MonthRun; changed: MonthRun } | null>(null);
+  if (!start) return <p className="sub">🔁 이 달은 첫날 기록이 없어 다시 돌려 볼 수 없어요. 앞으로 오는 리포트부터 돼요.</p>;
+  return (
+    <section className="whatif" aria-label="다시 돌려 보기">
+      <h4>🔁 {r.label.replace(/^\d+년차 /, '')}을 다시 돌려 본다면?</h4>
+      <p className="sub">그 달 첫날로 돌아가 하나만 바꿔서 한 달을 다시 돌려요. 실제 가게는 바뀌지 않아요.</p>
+      <div className="whatif-options">
+        {whatIfOptions(start).map((o) => (
+          <button key={o.id} className="btn mini" aria-pressed={result?.label === o.label} onClick={() => setResult({ label: o.label, ...whatIf(start, o.id) })}>{o.label}</button>
+        ))}
+      </div>
+      {result && (
+        <p className="whatif-result" role="status">
+          <b>{result.label}</b> 이익 <b className={result.changed.profit < result.base.profit ? 'neg' : ''}>{signed(result.changed.profit - result.base.profit)}</b>
+          {' '}· 주문 {result.changed.orders - result.base.orders >= 0 ? '+' : ''}{result.changed.orders - result.base.orders}건
+          <span className="sub"> (그대로였다면 {manwon(result.base.profit)} → {manwon(result.changed.profit)})</span>
+        </p>
+      )}
+      <p className="sub">둘 다 그 달 첫날 설정 그대로 돌린 결과라, 달 중간에 바꾼 게 있으면 실제 이익과 조금 달라요.</p>
+    </section>
+  );
+}
+
+function ReportView({ r, onGoto, createdAt }: { r: MonthReport; onGoto?: (t: TabKey) => void; createdAt?: number }) {
   const [more, setMore] = useState(false);
   const top = topPart(r);
   const max = Math.max(1, ...r.parts.map((p) => Math.abs(p.amount)));
@@ -118,6 +146,7 @@ function ReportView({ r, onGoto }: { r: MonthReport; onGoto?: (t: TabKey) => voi
           {r.events.map((e, i) => <li key={i} className={`tone-${e.tone}`}><span className="sub">{shortDay(e.day)}</span> {e.text}</li>)}
         </ul>
       )}
+      {createdAt !== undefined && <WhatIf key={r.monthIndex} r={r} createdAt={createdAt} />}
       <button className="btn mini" aria-expanded={more} onClick={() => setMore((v) => !v)}>{more ? '접기' : '📏 핵심 지표·내가 바꾼 것 더 보기'}</button>
       {more && (<>
       <h4>📏 핵심 지표</h4>
@@ -187,7 +216,7 @@ function Reports({ state, onGoto }: { state: GameState; onGoto?: (t: TabKey) => 
         </div>
       )}
       {years.length > 0 && <YearCard y={years[years.length - 1]} />}
-      {r && <ReportView r={r} onGoto={onGoto} />}
+      {r && <ReportView r={r} onGoto={onGoto} createdAt={state.createdAt} />}
       {shocks.length > 0 && (
         <>
           <h4>🌪️ 위기·기회 리포트</h4>

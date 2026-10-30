@@ -1,3 +1,4 @@
+import { CATCH_UP_MIN_TICKS } from '../../sim/catchUp';
 import { accrueCharge, formatCharge } from '../../sim/charge';
 import type { Weather } from '../../sim/economy';
 import { ownerAway, stressFace, STRESS_TIRED } from '../../sim/owner';
@@ -35,6 +36,8 @@ export function PlaybackBar(p: {
   onPlay: () => void;
   onStop: () => void;
   onSpeed: (s: Speed) => void;
+  /** 몰아 돌리기(충전이 이틀치 넘게 쌓였을 때) */
+  onSkip?: () => void;
 }) {
   const charge = accrueCharge(p.state.charge, p.now).ticks;
   return (
@@ -53,7 +56,9 @@ export function PlaybackBar(p: {
       </div>
       <div className="playbar-info">
         <div className="clock">{formatClock(p.state.clock)} · {WEATHER_LABEL[p.state.economy.weather]}</div>
-        <div className="charge">남은 영업 {formatCharge(charge)}</div>
+        <div className="charge">남은 영업 {formatCharge(charge)}
+          {p.onSkip && !p.playing && charge >= CATCH_UP_MIN_TICKS && <button className="btn mini skip" onClick={p.onSkip}>⏩ 몰아 돌리기</button>}
+        </div>
       </div>
       <StressGauge state={p.state} />
       <div className={`cash ${p.state.cash < 0 ? 'neg' : ''}`}>

@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { catchUp, type CatchUpSummary } from '../../sim/catchUp';
 import { playTick, type AnimEvents, type PauseReason } from '../../sim/tick';
+import { monthStartSnapshot } from '../../sim/whatIf';
+import { saveMonthStart } from '../monthSnapshots';
 import type { GameState } from '../../sim/types';
 
 /** 기본 재생 속도: 1주(77틱) = 150초 */
@@ -35,6 +38,8 @@ export function usePlayback(initial: GameState, o: { now: () => number; persist:
     stateRef.current = r.state;
     setState(r.state);
     setLastAnim(r.anim);
+    const snap = monthStartSnapshot(r.state);
+    if (snap) saveMonthStart(snap);
     optsRef.current.persist(r.state);
     if (r.pauses.length > 0) {
       setPlaying(false);
@@ -89,6 +94,22 @@ export function usePlayback(initial: GameState, o: { now: () => number; persist:
     optsRef.current.persist(s);
   }, []);
 
+  /** 몰아 돌리기: 쌓인 충전을 한 번에, 큰일이 생기면 거기서 멈춘다 */
+  const skip = useCallback((): CatchUpSummary => {
+    setPlaying(false);
+    autoPausedRef.current = false;
+    const r = catchUp(stateRef.current, optsRef.current.now(), (s) => {
+      const snap = monthStartSnapshot(s);
+      if (snap) saveMonthStart(snap);
+    });
+    stateRef.current = r.state;
+    setState(r.state);
+    setLastAnim(null);
+    optsRef.current.persist(r.state);
+    if (r.pauses.length > 0) pushPauses(r.pauses);
+    return r.summary;
+  }, [pushPauses]);
+
   const replace = useCallback((s: GameState) => {
     stateRef.current = s;
     setState(s);
@@ -98,5 +119,11 @@ export function usePlayback(initial: GameState, o: { now: () => number; persist:
     optsRef.current.persist(s);
   }, []);
 
-  return { state, playing, speed, setSpeed, play, stop, lastAnim, pauses, dismissPause, update, replace };
+  // 새 가게의 첫날도 사진을 남긴다
+  useEffect(() => {
+    const snap = monthStartSnapshot(stateRef.current);
+    if (snap) saveMonthStart(snap);
+  }, []);
+
+  return { state, playing, speed, setSpeed, play, stop, lastAnim, pauses, dismissPause, update, replace, skip };
 }
