@@ -11,4 +11,6 @@ export interface GroupOffer {
   discount: number;
   /** 이 날까지 답하지 않으면 사라진다 */
   expiresDay: number;
+  /** 받은 뒤 미리 만들어 둔 판 수(메뉴별) */
+  madeItems?: { menu: PizzaId; qty: number }[];
 }

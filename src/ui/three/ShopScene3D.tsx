@@ -3,7 +3,7 @@ import type { AnimEvents } from '../../sim/tick';
 import { ShopEngine } from './engine';
 
 /** 3D 미니어처 가게. 손가락으로 끌면 돌려 보고, 두 손가락으로 확대할 수 있다. */
-export default function ShopScene3D({ anim, hour, still, onFail, tables = 4, staff = 2 }: {
+export default function ShopScene3D({ anim, hour, still, onFail, tables = 3, staff = 2 }: {
   anim: AnimEvents | null;
   hour: number;
   tables?: number;

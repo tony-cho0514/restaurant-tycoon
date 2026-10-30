@@ -7,6 +7,8 @@ export interface DayRecord {
   monthIndex: number;
   hallOrders: number;
   deliveryOrders: number;
+  /** 단체 주문 건수 */
+  groupOrders: number;
   lostOrders: number;
   stockoutOrders: number;
   revenueHall: number;
@@ -38,15 +40,15 @@ export interface Ledger {
 
 export const DAYS_KEEP = 112;
 
-const NUMERIC_KEYS = [
-  'hallOrders', 'deliveryOrders', 'lostOrders', 'stockoutOrders', 'revenueHall', 'revenueDelivery', 'foodCost',
+export const NUMERIC_KEYS = [
+  'hallOrders', 'deliveryOrders', 'groupOrders', 'lostOrders', 'stockoutOrders', 'revenueHall', 'revenueDelivery', 'foodCost',
   'serviceCost', 'wasteCost', 'labor', 'rent', 'appFees', 'cardFees', 'deliveryFees', 'utilities', 'ads', 'investment', 'purchases',
 ] as const;
 
 export function emptyDay(day: number, monthIndex: number): DayRecord {
   return {
     day, monthIndex,
-    hallOrders: 0, deliveryOrders: 0, lostOrders: 0, stockoutOrders: 0,
+    hallOrders: 0, deliveryOrders: 0, groupOrders: 0, lostOrders: 0, stockoutOrders: 0,
     revenueHall: 0, revenueDelivery: 0,
     foodCost: 0, serviceCost: 0, wasteCost: 0, labor: 0, rent: 0, appFees: 0, cardFees: 0, deliveryFees: 0, utilities: 0, ads: 0, investment: 0,
     purchases: 0,
@@ -63,7 +65,7 @@ export function closeMonth(l: Ledger, monthIndex: number): Ledger {
   const { day: _d, usage: _u, prices: _p, ...month } = emptyDay(0, monthIndex);
   for (const d of l.days) {
     if (d.monthIndex !== monthIndex) continue;
-    for (const k of NUMERIC_KEYS) month[k] += d[k];
+    for (const k of NUMERIC_KEYS) month[k] += Number.isFinite(d[k]) ? d[k] : 0;
   }
   return { ...l, months: [...l.months, month] };
 }
@@ -73,4 +75,11 @@ export function profitOf(r: DayRecord | MonthRecord): number {
     r.revenueHall + r.revenueDelivery -
     r.foodCost - r.serviceCost - r.wasteCost - r.labor - r.rent - r.appFees - (r.cardFees ?? 0) - r.deliveryFees - r.utilities - r.ads - (r.investment ?? 0)
   );
+}
+
+/** 옛 저장에 없던 숫자 필드나 NaN이 된 값을 0으로 채운다(장부가 「NaN원」이 되지 않게). */
+export function normalizeRecord<T extends Record<string, unknown>>(r: T): T {
+  const out: Record<string, unknown> = { ...r };
+  for (const k of NUMERIC_KEYS) if (typeof out[k] !== 'number' || !Number.isFinite(out[k] as number)) out[k] = 0;
+  return out as T;
 }

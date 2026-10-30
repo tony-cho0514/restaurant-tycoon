@@ -75,13 +75,15 @@ export function InventoryPanel({ state, update }: PanelProps) {
           const line = preview?.lines.find((l) => l.id === id);
           return (
             <li key={id} className={`row inv ${item ? 'picked' : ''}`}>
-              <input
-                type="checkbox"
-                className="pick"
-                aria-label={`${def.name} 선택`}
-                checked={!!item}
-                onChange={() => toggle(id)}
-              />
+              <label className="pick-wrap">
+                <input
+                  type="checkbox"
+                  className="pick"
+                  aria-label={`${def.name} 선택`}
+                  checked={!!item}
+                  onChange={() => toggle(id)}
+                />
+              </label>
               <span className="row-icon" aria-hidden="true">{INGREDIENT_ICON[id]}</span>
               <div className="row-main">
                 <strong>{def.name}</strong>

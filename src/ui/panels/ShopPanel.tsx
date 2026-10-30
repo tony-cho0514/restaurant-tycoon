@@ -1,5 +1,6 @@
 import { DELIVERY_COST_TOTAL, UTILITIES_PER_HOUR } from '../../sim/balance';
 import { dailyLabor } from '../../sim/labor';
+import { shiftHours } from '../../sim/staffing';
 import type { Settings } from '../../sim/types';
 import { MAX_GRADE, UPGRADES, UPGRADE_IDS, buyUpgrade, shopGrade, upgradeCost } from '../../sim/upgradeOps';
 import { won } from '../format';
@@ -14,7 +15,11 @@ export function ShopPanel({ state, update }: PanelProps) {
   const set = (patch: Partial<Settings>) => update((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
   const hours = st.closeHour - st.openHour;
   const openDays = 7 - (st.closedDay === null ? 0 : 1);
-  const labor = dailyLabor(hours, state.economy.minWage, hours * openDays);
+  // 지금 직원 그대로 이 영업시간이면 하루 알바비가 얼마인지
+  const labor = state.staff.reduce((a, x) => {
+    const h = shiftHours(state, x.shift);
+    return a + dailyLabor(h, x.wage, h * openDays);
+  }, 0);
   const utilities = Math.round(UTILITIES_PER_HOUR * hours);
   const clampTip = (v: number) => Math.min(DELIVERY_COST_TOTAL, Math.max(0, v));
 

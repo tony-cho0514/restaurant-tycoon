@@ -30,7 +30,10 @@ export const INSURANCE_RATE = 0.09;
 export const HOLIDAY_PAY_RATE = 0.2;
 export const HOLIDAY_PAY_MIN_WEEKLY_HOURS = 15;
 export const START_MIN_WAGE = 10_030;
-export const PIZZAS_PER_STAFF_HOUR = 7;
+/** 사장님 혼자 시간당 만드는 피자(계산·포장·응대도 하느라 알바보다 적다) */
+export const OWNER_PIZZAS_PER_HOUR = 4;
+/** 처리 능력의 80%를 넘는 주문이 들어오면 넘친 비율 × 이 값만큼 대기 시간이 늘어난다 */
+export const OVERLOAD_WAIT_SLOPE = 3;
 
 /** 운영 수단 없이 평범하게 장사할 때 손님 만족도의 평균. 평점은 이 값 근처로 수렴한다. */
 export const SATISFACTION_BASE = 4.4;

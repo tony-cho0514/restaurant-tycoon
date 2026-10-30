@@ -73,7 +73,7 @@ export function createNewGame(o: { seed: number; neighborhoodId: NeighborhoodId;
     openedDay: -1,
     menuActive: defaultMenuActive(),
     menuDeveloped: { cheese: true, pepperoni: true, combo: true, cola: true },
-    staff: [initialStaff(economy.minWage)],
+    staff: [initialStaff(economy.minWage, o.neighborhoodId === 'office' ? 'lunch' : 'dinner')],
     applicants: [],
     jobPost: null,
     upgrades: defaultUpgrades(),

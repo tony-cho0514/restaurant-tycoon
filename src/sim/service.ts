@@ -1,3 +1,5 @@
+import { OVERLOAD_WAIT_SLOPE } from './balance';
+
 export function serveHour(hall: number, delivery: number, capacity: number) {
   const total = hall + delivery;
   const maxServed = Math.floor(capacity * 1.2);
@@ -6,7 +8,8 @@ export function serveHour(hall: number, delivery: number, capacity: number) {
   const lostDelivery = Math.min(delivery, lost);
   const lostHall = lost - lostDelivery;
   const load = capacity > 0 ? total / capacity : Infinity;
-  const k = load <= 0.8 ? 1 : 1 + 2 * (load - 0.8);
+  // 일손보다 주문이 많으면 대기 시간이 빠르게 늘어난다.
+  const k = load <= 0.8 ? 1 : 1 + OVERLOAD_WAIT_SLOPE * (load - 0.8);
   return {
     servedHall: hall - lostHall,
     servedDelivery: delivery - lostDelivery,

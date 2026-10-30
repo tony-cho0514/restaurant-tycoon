@@ -67,16 +67,17 @@ export function SalesPanel({ state }: PanelProps) {
 
       <h4>최근 7일</h4>
       <table className="ledger" aria-label="최근 7일">
-        <thead><tr><th>날짜</th><th>홀</th><th>배달</th><th>매출</th><th>객단가</th></tr></thead>
+        <thead><tr><th>날짜</th><th>홀</th><th>배달</th><th>단체</th><th>매출</th><th>객단가</th></tr></thead>
         <tbody>
           {recent.slice().reverse().map((d) => {
-            const n = d.hallOrders + d.deliveryOrders;
+            const n = d.hallOrders + d.deliveryOrders + (d.groupOrders ?? 0);
             const rev = d.revenueHall + d.revenueDelivery;
             return (
               <tr key={d.day}>
                 <th>{dayLabel(d.day, today)}</th>
                 <td>{d.hallOrders}</td>
                 <td>{d.deliveryOrders}</td>
+                <td>{d.groupOrders ?? 0}</td>
                 <td>{won(rev)}</td>
                 <td>{n ? won(rev / n) : '—'}</td>
               </tr>

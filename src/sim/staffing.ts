@@ -1,5 +1,5 @@
 // 직원 운영: 근무 시간대, 처리 능력, 채용 공고·지원자·면접·채용·해고, 결근·이직·성향 공개.
-import { PIZZAS_PER_STAFF_HOUR } from './balance';
+import { OWNER_PIZZAS_PER_HOUR } from './balance';
 import { pushNews } from './news';
 import type { Rng } from './rng';
 import type { Applicant, Shift, Staff, Traits } from './staff';
@@ -33,7 +33,7 @@ export function staffWorking(s: GameState, hour: number): Staff[] {
 /** 시간당 만들 수 있는 피자: 사장 + 근무 중 알바(손 빠르기), 오븐 상한 */
 export function capacityAt(s: GameState, hour: number): number {
   const crew = staffWorking(s, hour).reduce((a, x) => a + STAFF_BASE_PIZZAS + STAFF_SPEED_PIZZAS * x.traits.speed, 0);
-  return Math.min(Math.round(PIZZAS_PER_STAFF_HOUR + crew) - (s.levers.reviewReplies ? 1 : 0), ovenCap(s));
+  return Math.min(Math.round(OWNER_PIZZAS_PER_HOUR + crew) - (s.levers.reviewReplies ? 1 : 0), ovenCap(s));
 }
 
 /** 근무 중 알바의 친절함이 홀 만족도에 주는 보정 */
@@ -132,7 +132,7 @@ export function hire(s: GameState, applicantId: number): GameState {
   const a = s.applicants.find((x) => x.id === applicantId);
   if (!a) throw new Error('지원자를 찾을 수 없어요');
   const staff: Staff = {
-    id: a.id, name: a.name, age: a.age, wage: a.wantWage, shift: a.shift, traits: a.traits,
+    id: a.id, name: a.name, age: a.age, wage: Math.max(a.wantWage, s.economy.minWage), shift: a.shift, traits: a.traits,
     revealed: {}, daysWorked: 0, hiredDay: s.clock.day,
   };
   return { ...s, staff: [...s.staff, staff], applicants: s.applicants.filter((x) => x.id !== applicantId) };
@@ -153,6 +153,7 @@ export function setWage(s: GameState, staffId: number, wage: number): GameState 
 
 // ── 하루 단위 사건 ───────────────────────────────────
 
+const QUIT_GRACE_DAYS = 28;
 const REVEAL_DAYS: [keyof Traits, number][] = [['speed', 7], ['kindness', 14], ['diligence', 21], ['quitRisk', 28]];
 
 /** 개점 때: 결근, (월요일) 그만두기 */
@@ -166,8 +167,10 @@ export function staffMorning(s: GameState, rng: Rng, isMonday: boolean): GameSta
   let staff = s.staff;
   if (isMonday) {
     const openDays = 7 - (s.settings.closedDay === null ? 0 : 1);
+    // 들어온 지 4주가 안 된 사람은 그만두지 않는다.
     const quitters = staff.filter((x) => {
-      const p = x.traits.quitRisk * 0.05 + (x.wage < s.economy.minWage + 500 ? 0.05 : 0) + (x.shift === 'full' && openDays >= 6 ? 0.03 : 0);
+      if (x.daysWorked < QUIT_GRACE_DAYS) return false;
+      const p = x.traits.quitRisk * 0.05 + (x.wage < s.economy.minWage + 500 ? 0.05 : 0) + (x.shift === 'full' && openDays >= 6 ? 0.02 : 0);
       return rng.chance(p);
     });
     for (const q of quitters) {

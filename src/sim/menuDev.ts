@@ -21,6 +21,7 @@ export function developMenu(s: GameState, id: PizzaId): GameState {
     inventory = buy(inventory, ing, qty, s.prices[ing], s.clock.day);
     spent += Math.round(qty * s.prices[ing]);
   }
+  if (s.cash < MENU_DEV_COST + spent) throw new Error('돈이 모자라요');
   return {
     ...s,
     menuActive,

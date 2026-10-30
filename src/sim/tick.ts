@@ -90,7 +90,7 @@ function openDay(s: GameState, rng: Rng): number[] {
     s.today.rent += n.listing.monthlyRent;
   }
   s.news = dailyFlavor(s.news, day, rng, n.name);
-  Object.assign(s, staffMorning(s, rng, cal.dayOfWeek === 0));
+  if (!isClosedToday(s)) Object.assign(s, staffMorning(s, rng, cal.dayOfWeek === 0));
   Object.assign(s, arriveApplicants(s, rng));
   const g = morningGroupOffers(s, rng);
   Object.assign(s, g.state);
@@ -235,7 +235,8 @@ function isClosedToday(s: GameState): boolean {
 
 /** 이번 틱이 쓰는 충전: 휴무일은 0, 아니면 표준 하루(11)를 영업시간으로 나눈 만큼. */
 export function tickCost(s: GameState): number {
-  return isClosedToday(s) ? 0 : TICKS_PER_DAY / openHours(s);
+  // 휴무일은 그날 첫 틱에서 바로 넘어간다. 이미 연 날을 휴무로 바꾸면 내일부터 적용.
+  return s.openedDay !== s.clock.day && isClosedToday(s) ? 0 : TICKS_PER_DAY / openHours(s);
 }
 
 function closeDayInPlace(s: GameState, pauses: PauseReason[], closed: boolean) {

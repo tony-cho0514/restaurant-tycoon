@@ -38,9 +38,10 @@ export interface JobPost {
   postedDay: number;
 }
 
-export function initialStaff(minWage: number): Staff {
+/** 개업 때 있는 알바: 그 동네 손님이 몰리는 시간대 근무(대학가·주택가 저녁, 오피스 점심) */
+export function initialStaff(minWage: number, shift: Shift = 'dinner'): Staff {
   return {
-    id: 1, name: '김하늘', age: 22, wage: minWage, shift: 'full',
+    id: 1, name: '김하늘', age: 22, wage: minWage + 500, shift,
     traits: { speed: 0.5, kindness: 0.5, diligence: 0.6, quitRisk: 0.3 },
     revealed: {}, daysWorked: 0, hiredDay: 0,
   };

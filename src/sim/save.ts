@@ -2,6 +2,7 @@
 import { CHARGE_CAP_TICKS } from './charge';
 import { INGREDIENT_IDS, ingredientPrice } from './ingredients';
 import { DEFAULT_RULES } from './inventory';
+import { normalizeRecord } from './ledger';
 import { defaultMenuActive } from './menu';
 import { initialStaff } from './staff';
 import { calendar } from './time';
@@ -70,6 +71,22 @@ function hasGameShape(x: unknown): x is GameState {
   );
 }
 
+/** 하루·월 기록의 숫자 필드를 모두 유한한 수로 맞춘다(옛 저장·NaN 기록 고치기). */
+function normalizeLedger(x: unknown): unknown {
+  if (!obj(x) || !obj(x.ledger) || !obj(x.today)) return x;
+  const ledger = x.ledger as { days?: unknown; months?: unknown };
+  if (!Array.isArray(ledger.days) || !Array.isArray(ledger.months)) return x;
+  return {
+    ...x,
+    today: normalizeRecord(x.today as Record<string, unknown>),
+    ledger: {
+      ...ledger,
+      days: ledger.days.map((d) => (obj(d) ? normalizeRecord(d) : d)),
+      months: ledger.months.map((m) => (obj(m) ? normalizeRecord(m) : m)),
+    },
+  };
+}
+
 /** 옛 저장 형식을 지금 형식으로 옮긴다(없는 필드는 기본값). */
 export function migrate(x: unknown): unknown {
   if (!obj(x)) return x;
@@ -125,7 +142,7 @@ function toV3(x: Record<string, unknown>): Record<string, unknown> {
 
 /** 형태 확인 + 한 틱 시험 실행으로 속까지 멀쩡한지 본다. 멀쩡하면 충전값만 범위 안으로 묶어 돌려준다. */
 function validState(raw: unknown): GameState | null {
-  const x = migrate(raw);
+  const x = normalizeLedger(migrate(raw));
   if (!hasGameShape(x)) return null;
   try {
     advanceTickInPlace(structuredClone(x));

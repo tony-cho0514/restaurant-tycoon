@@ -5,6 +5,7 @@ import type { GameState } from '../../sim/types';
 import { won } from '../format';
 import { newsIcon } from '../icons';
 import { MENU } from '../../sim/menu';
+import { groupFeasible } from '../../sim/groupOrders';
 
 function dayText(day: number, today: number): string {
   const d = day - today;
@@ -51,6 +52,7 @@ export function PauseModal({ reason, state, now, onDismiss, onGoto, onAccept = (
     title = o ? `단체 주문 요청: ${o.title}` : '단체 주문 요청';
     if (o) {
       const total = o.items.reduce((a, i) => a + i.qty, 0);
+      const feasible = groupFeasible(state, o);
       const amount = Math.round(o.items.reduce((a, i) => a + i.qty * state.menuPrices[i.menu], 0) * (1 - o.discount));
       body = (
         <dl className="facts">
@@ -58,6 +60,7 @@ export function PauseModal({ reason, state, now, onDismiss, onGoto, onAccept = (
           <div><dt>무엇을</dt><dd>{o.items.map((i) => `${MENU[i.menu].name} ${i.qty}판`).join(', ')}</dd></div>
           <div><dt>할인 요청</dt><dd>{Math.round(o.discount * 100)}%</dd></div>
           <div><dt>받을 돈</dt><dd>{won(amount)} ({total}판)</dd></div>
+          <div><dt>그 시각까지 만들 수 있는 양</dt><dd>최대 {feasible!.maxPizzas}판 · 지금 재고로 {feasible!.stockPizzas}판</dd></div>
         </dl>
       );
       extra = (
@@ -104,7 +107,9 @@ export function PauseModal({ reason, state, now, onDismiss, onGoto, onAccept = (
         {body}
         <div className="modal-actions">
           {extra}
-          {reason.kind !== 'groupOffer' && <button className="btn primary" onClick={() => onDismiss()}>확인</button>}
+          {(reason.kind !== 'groupOffer' || !state.groupOffers.some((x) => x.id === reason.offerId)) && (
+            <button className="btn primary" onClick={() => onDismiss()}>확인</button>
+          )}
         </div>
       </div>
     </div>

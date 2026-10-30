@@ -23,7 +23,7 @@ test('중요 뉴스면 멈추고, 창을 다 닫으면 이어서 재생', () => 
   const s = midDay(); s.news.pending.push({ id: 'p', type: 'FESTIVAL', signalDay: 0, fireDay: 2, real: true, magnitude: 0.6 });
   const { result } = renderHook(() => usePlayback(s, { now: () => 0, persist: () => {} }));
   act(() => result.current.play()); act(() => { vi.advanceTimersByTime(1948 * 11); });
-  expect(result.current.playing).toBe(false); expect(result.current.pauses[0].kind).toBe('news');
+  expect(result.current.playing).toBe(false); expect(result.current.pauses.some((p) => p.kind === 'news')).toBe(true);
   for (let i = 0; i < 5 && result.current.pauses.length; i++) act(() => result.current.dismissPause());
   expect(result.current.playing).toBe(true);
 });

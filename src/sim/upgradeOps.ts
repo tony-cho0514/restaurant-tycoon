@@ -14,7 +14,7 @@ export interface UpgradeDef {
   effect: (level: number) => string;
 }
 
-const TABLES = [4, 5, 6];
+const TABLES = [3, 4, 6];
 const OVEN = [16, 24, 32];
 const STORAGE = [1, 1.5, 2];
 const INTERIOR = [0, 0.1, 0.2];
@@ -22,7 +22,7 @@ const SIGN = [1, 1.1];
 const BIKE = [0, 5, 10];
 
 export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
-  tables: { name: '식탁 늘리기', icon: '🍽️', start: 1, max: 3, costs: [2_000_000, 2_500_000], effect: (l) => `식탁 ${TABLES[l - 1]}개 · 시간당 홀 손님 최대 ${TABLES[l - 1] * 3}명` },
+  tables: { name: '식탁 늘리기', icon: '🍽️', start: 1, max: 3, costs: [2_000_000, 2_500_000], effect: (l) => `식탁 ${TABLES[l - 1]}개 · 시간당 홀 손님 최대 ${TABLES[l - 1] * 2}명` },
   oven: { name: '화덕 오븐', icon: '🔥', start: 1, max: 3, costs: [5_000_000, 8_000_000], effect: (l) => `시간당 피자 최대 ${OVEN[l - 1]}판` },
   storage: { name: '창고·냉장고', icon: '🧊', start: 1, max: 3, costs: [1_500_000, 3_000_000], effect: (l) => `미리 사 둘 수 있는 양 ×${STORAGE[l - 1]}` },
   interior: { name: '인테리어', icon: '🪴', start: 1, max: 3, costs: [4_000_000, 7_000_000], effect: (l) => (l === 1 ? '기본 인테리어' : `홀 만족도 +${INTERIOR[l - 1]}`) },
@@ -33,8 +33,8 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
 export const UPGRADE_IDS = Object.keys(UPGRADES) as UpgradeId[];
 
 export const tableCount = (s: GameState) => TABLES[s.upgrades.tables - 1];
-/** 시간당 받을 수 있는 홀 손님(좌석 × 1.5회전) */
-export const hallSeatCap = (s: GameState) => tableCount(s) * 2 * 1.5;
+/** 시간당 받을 수 있는 홀 손님(좌석 2개짜리 식탁, 한 시간에 한 번 회전) */
+export const hallSeatCap = (s: GameState) => tableCount(s) * 2;
 export const ovenCap = (s: GameState) => OVEN[s.upgrades.oven - 1];
 export const storageMult = (s: GameState) => STORAGE[s.upgrades.storage - 1];
 export const interiorBonus = (s: GameState) => INTERIOR[s.upgrades.interior - 1];
