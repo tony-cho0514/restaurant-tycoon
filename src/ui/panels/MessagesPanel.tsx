@@ -15,7 +15,7 @@ const FILTERS: { id: Filter; label: string; match: (m: Message, s: GameState) =>
   { id: 'reply', label: '답장', match: (m, s) => canReply(s, m) && m.reply?.id !== 'auto' },
   { id: 'customer', label: '손님', match: (m) => (['review', 'request', 'group'] as Sender[]).includes(m.from) },
   { id: 'staff', label: '직원', match: (m) => m.from === 'staff' },
-  { id: 'news', label: '거래처·소식', match: (m) => m.from === 'supplier' || m.from === 'news' || m.from === 'book' },
+  { id: 'news', label: '거래처·소식', match: (m) => m.from === 'supplier' || m.from === 'news' || m.from === 'book' || m.from === 'landlord' || m.from === 'bank' },
   { id: 'owner', label: '나', match: (m) => m.from === 'owner' },
   { id: 'important', label: '중요', match: (m) => !!m.important },
 ];
@@ -119,6 +119,7 @@ export function MessagesPanel({ state, update, onGoto, focusId = null }: PanelPr
                 <div className="msg-bubble">
                   <div className="msg-meta">
                     <b>{m.name}</b>
+                    {m.regular && <span className="regular-tag">단골</span>}
                     {m.channel && m.from !== 'owner' && <span className="sub">{m.channel === 'delivery' ? '배달앱' : '홀'}</span>}
                     {m.stars !== undefined && <span className="stars" aria-label={`별 ${m.stars}개`}>{starText(m.stars)}</span>}
                     <span className="sub">{m.hour}시</span>

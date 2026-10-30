@@ -17,6 +17,11 @@ import { dailyLabor } from './labor';
 import { absenceMessages, dayEndMessage, fromNews, hourMessages, pushMessage, tiredMessage, type ReviewSeed } from './messages';
 import { dayEndLearning, monthEndLearning, startShock } from './learning';
 import { checkGuide } from './guide';
+import { badEventRoom } from './pressure';
+import { currentRent, leaseMorning } from './lease';
+import { distressEvening, payLoanInPlace } from './bank';
+import { yearEndReport } from './yearEnd';
+import { regularsEvening } from './regulars';
 import { MONSOON_DELIVERY_DELAY, inMonsoon, localDemand, localEvening, localEventsIn, localMorning, monsoonRain, planLocalWeek } from './localEvents';
 import { dayEndFollowUps, dueCoupons, settleCoupons } from './replies';
 import { announceMinWage, applyMinWage, dailyFlavor, demandShock, fireDue, planWeek, shockMultiplier, type NewsItem } from './news';
@@ -37,7 +42,10 @@ export type PauseReason =
   | { kind: 'monthEnd'; monthIndex: number }
   | { kind: 'cashNegative' }
   | { kind: 'outOfCharge' }
-  | { kind: 'groupOffer'; offerId: number };
+  | { kind: 'groupOffer'; offerId: number }
+  | { kind: 'distress' }
+  | { kind: 'closed' }
+  | { kind: 'yearEnd'; year: number };
 
 export interface AnimEvents {
   hour: number;
@@ -61,10 +69,11 @@ function openDay(s: GameState, rng: Rng): number[] {
   const cal = calendar(s.clock);
   const day = s.clock.day;
   ownerMorning(s);
+  leaseMorning(s);
   if (cal.dayOfWeek === 0) {
     s.economy = stepEconomyWeek(s.economy, rng);
-    ({ news: s.news, economy: s.economy } = planWeek(s.news, s.economy, day, rng, n.name));
-    planLocalWeek(s, rng);
+    ({ news: s.news, economy: s.economy } = planWeek(s.news, s.economy, day, rng, n.name, badEventRoom(s, day)));
+    planLocalWeek(s, rng, badEventRoom(s, day));
   }
   ({ news: s.news, economy: s.economy } = fireDue(s.news, s.economy, day, rng, n.name));
   if (cal.month === 7 && cal.dayOfMonth === 0) ({ news: s.news, economy: s.economy } = announceMinWage(s.news, s.economy, day, rng));
@@ -96,8 +105,10 @@ function openDay(s: GameState, rng: Rng): number[] {
   s.today.purchases += order.spent;
 
   if (cal.dayOfMonth === 0 && day > 0) {
-    s.cash -= n.listing.monthlyRent;
-    s.today.rent += n.listing.monthlyRent;
+    const rent = currentRent(s);
+    s.cash -= rent;
+    s.today.rent += rent;
+    payLoanInPlace(s);
   }
   s.news = dailyFlavor(s.news, day, rng, n.name);
   if (!isClosedToday(s)) {
@@ -337,16 +348,26 @@ function closeDayInPlace(s: GameState, pauses: PauseReason[], closed: boolean) {
   const record = !closed && s.ledger.days.length >= 7 && revenue > Math.max(...s.ledger.days.map((d) => d.revenueHall + d.revenueDelivery));
   ownerEvening(s, closed, record);
   dayEndMessage(s, closed, record);
+  regularsEvening(s);
   dayEndFollowUps(s);
   s.ledger = closeDay(s.ledger, s.today);
   s.orders = pruneOrders(s.orders, s.clock.day);
   dayEndLearning(s);
   localEvening(s);
+  const distress = distressEvening(s);
+  if (distress) pauses.push({ kind: distress === 'warn' ? 'distress' : 'closed' });
   if (cal.dayOfMonth === 27) {
     s.ledger = closeMonth(s.ledger, cal.monthIndex);
     const from = cal.monthIndex * 28;
     monthEndLearning(s, cal.monthIndex, localEventsIn(s, from, from + 27));
-    pauses.push({ kind: 'monthEnd', monthIndex: cal.monthIndex });
+    const year = yearEndReport(s, cal.monthIndex);
+    if (year) {
+      s.learning = { ...s.learning, years: [...(s.learning.years ?? []), year] };
+      pushMessage(s, { from: 'book', name: '1년 결산', tone: year.profit >= 0 ? 'good' : 'bad', important: true, action: 'learn', text: `${year.year}년차 결산이 나왔어요. ${year.titles.join(' · ')}` });
+      pauses.push({ kind: 'yearEnd', year: year.year });
+    } else {
+      pauses.push({ kind: 'monthEnd', monthIndex: cal.monthIndex });
+    }
   }
 }
 
@@ -370,6 +391,7 @@ export function advanceTickInPlace(s: GameState): { pauses: PauseReason[]; anim:
     weather: s.economy.weather, stockouts: [],
   };
   const { openHour, closeHour } = s.settings;
+  if (s.closed) return { pauses, anim };
   let dayOver = false;
 
   // 새 날의 첫 틱: 여는 시각에 맞추고 개점 준비(경제·뉴스·시세·폐기·발주·월세).
@@ -433,6 +455,7 @@ export function advanceTick(s: GameState): { state: GameState; pauses: PauseReas
 }
 
 export function playTick(s: GameState, nowMs: number): { state: GameState; pauses: PauseReason[]; anim: AnimEvents } | null {
+  if (s.closed) return null;
   const charge = accrueCharge(s.charge, nowMs);
   const cost = tickCost(s);
   if (!canPlay(charge, cost)) return null;

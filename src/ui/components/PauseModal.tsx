@@ -90,10 +90,34 @@ export function PauseModal({ reason, state, now, onDismiss, onGoto, onAccept = (
     );
     tone = profit >= 0 ? 'good' : 'bad';
     extra = <button className="btn" onClick={() => { onGoto('learn'); onDismiss({ resume: false }); }}>📚 부검 리포트 보기</button>;
+  } else if (reason.kind === 'yearEnd') {
+    const y = (state.learning.years ?? []).find((x) => x.year === reason.year);
+    title = `${reason.year}년차 결산`;
+    icon = '🎊';
+    body = y && (
+      <>
+        <p>1년을 버텼어요! 내일부터 {reason.year + 1}년차예요. 첫 숙제는 재계약으로 오르는 월세예요.</p>
+        <div className="chips">{y.titles.map((t) => <span key={t} className="chip tone-good">{t}</span>)}</div>
+        <dl className="facts">
+          <div><dt>한 해 매출</dt><dd>{won(y.revenue)}</dd></div>
+          <div><dt>한 해 이익</dt><dd className={y.profit < 0 ? 'neg' : ''}>{won(y.profit)}</dd></div>
+          <div><dt>적자 난 달</dt><dd>{y.lossMonths}달</dd></div>
+          <div><dt>겪은 악재</dt><dd>{y.hardships}번</dd></div>
+        </dl>
+      </>
+    );
+    tone = y && y.profit < 0 ? 'bad' : 'good';
+    extra = <button className="btn" onClick={() => { onGoto('learn'); onDismiss({ resume: false }); }}>📚 결산 자세히 보기</button>;
+  } else if (reason.kind === 'distress') {
+    title = '폐업 위기예요';
+    icon = '🚨';
+    body = <p>통장이 2주째 마이너스예요. <b>앞으로 2주 안에</b> 플러스로 돌리지 못하면 가게를 닫아야 해요. 장부에서 긴급 대출을 받거나, 가게 탭에서 업그레이드를 되팔거나, 알바 시간·영업시간을 줄여 보세요.</p>;
+    tone = 'bad';
+    extra = <button className="btn" onClick={() => { onGoto('ledger'); onDismiss({ resume: false }); }}>장부 보기</button>;
   } else if (reason.kind === 'cashNegative') {
     title = '통장이 마이너스예요';
     icon = '💸';
-    body = <p>지금 쓸 돈이 바닥났어요. 재료를 너무 많이 사 두지 않았는지, 가격이 원가보다 낮지 않은지 장부를 확인해 보세요.</p>;
+    body = <p>지금 쓸 돈이 바닥났어요. 재료를 너무 많이 사 두지 않았는지, 가격이 원가보다 낮지 않은지 장부를 확인해 보세요. 급하면 장부에서 긴급 대출을 받을 수 있어요.</p>;
     tone = 'bad';
     extra = <button className="btn" onClick={() => { onGoto('ledger'); onDismiss({ resume: false }); }}>장부 보기</button>;
   } else {

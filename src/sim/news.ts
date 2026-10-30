@@ -62,6 +62,18 @@ const RANDOM_SHOCK_WEIGHTS: { item: ShockType; weight: number }[] = [
   { item: 'FESTIVAL', weight: 2 },
 ];
 const WEEKLY_SHOCK_CHANCE = 0.35;
+/** 경기 순환(호황·불황·회복)은 숨 돌릴 틈 계산에서 뺀다: 몇 달짜리 배경이라 */
+const CYCLE_TYPES: ShockType[] = ['RECESSION', 'BOOM', 'RECOVERY'];
+
+/** 가게를 아프게 하는 위기인가(경기 순환 제외) */
+export function isBadShock(t: ShockType): boolean {
+  return SHOCK_RULES[t].tone === 'bad' && !CYCLE_TYPES.includes(t);
+}
+
+/** 위기가 이어지는 날 수(환율처럼 한 번에 끝나는 건 0) */
+export function shockDays(t: ShockType): number {
+  return SHOCK_RULES[t].activeDays;
+}
 
 function addItem(ns: NewsState, item: Omit<NewsItem, 'id'>): NewsState {
   const items = [...ns.items, { ...item, id: `n${ns.nextId}` }].slice(-NEWS_KEEP);
@@ -87,7 +99,8 @@ function schedule(ns: NewsState, type: ShockType, day: number, fireDay: number, 
   return addItem(withPending, { day, kind: 'signal', ...t, important: true, shockType: type, tone: rule.tone });
 }
 
-export function planWeek(ns: NewsState, econ: Economy, day: number, rng: Rng, place: string): { news: NewsState; economy: Economy } {
+/** room: 새 악재가 들어설 여지(0~1, 숨 돌릴 틈). 좋은 소식은 상관없다. */
+export function planWeek(ns: NewsState, econ: Economy, day: number, rng: Rng, place: string, room = 1): { news: NewsState; economy: Economy } {
   let news = ns;
   let economy = econ;
   const cyclePending = news.pending.some((p) => CYCLE_SHOCKS.includes(p.type));
@@ -108,7 +121,8 @@ export function planWeek(ns: NewsState, econ: Economy, day: number, rng: Rng, pl
     const type = rng.weighted(RANDOM_SHOCK_WEIGHTS);
     // 같은 종류가 대기 중이거나 아직 진행 중이면 새로 예약하지 않는다(파동이 겹쳐 값이 폭등하지 않게).
     const busy = news.pending.some((p) => p.type === type) || news.active.some((a) => a.type === type && a.untilDay >= day);
-    if (!busy) {
+    const calm = isBadShock(type) && (room <= 0 || (room < 1 && !rng.chance(room)));
+    if (!busy && !calm) {
       const [lo, hi] = SHOCK_RULES[type].lead;
       news = schedule(news, type, day, day + rng.int(lo, hi), rng, place);
     }

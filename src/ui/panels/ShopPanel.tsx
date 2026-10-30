@@ -1,4 +1,5 @@
 import { DELIVERY_COST_TOTAL, STRESS_REST_DAY, STRESS_REST_HOUR, UTILITIES_PER_HOUR } from '../../sim/balance';
+import { closeShop, resaleValue, sellUpgrade } from '../../sim/bank';
 import { dailyLabor } from '../../sim/labor';
 import { AWAY_LABEL, VACATION_COST, VACATION_DAYS, leaveEarly, ownerAway, ownerWorking, takeDayOff, takeVacation } from '../../sim/owner';
 import { shiftHours, staffWorking } from '../../sim/staffing';
@@ -150,6 +151,9 @@ export function ShopPanel({ state, update }: PanelProps) {
                 <span className="sub">지금: {def.effect(level)}</span>
                 {cost !== null && <span className="sub">다음: {def.effect(level + 1)}</span>}
               </div>
+              {resaleValue(state, id) !== null && (
+                <button className="btn mini" aria-label={`${def.name} 한 단계 되팔기`} onClick={() => { if (window.confirm(`「${def.name}」 한 단계를 되팔아 ${won(resaleValue(state, id)!)}을 받을까요? (산 값의 40%)`)) update((s) => sellUpgrade(s, id)); }}>되팔기 +{won(resaleValue(state, id)!)}</button>
+              )}
               {cost === null ? (
                 <span className="badge on">최고</span>
               ) : (
@@ -166,7 +170,10 @@ export function ShopPanel({ state, update }: PanelProps) {
           );
         })}
       </ul>
-      <p className="sub">업그레이드 비용은 장부의 「투자」로 잡혀서 그달 이익이 줄어 보여요. 길게 보고 정하세요.</p>
+      <p className="sub">업그레이드 비용은 장부의 「투자」로 잡혀서 그달 이익이 줄어 보여요. 길게 보고 정하세요. 되팔면 산 값의 40%만 돌려받아요.</p>
+      <h4>🚪 가게 정리하기</h4>
+      <p className="sub">문을 닫으면 보증금은 돌려받고 권리금은 못 받아요. 폐업 부검을 보고 다른 동네에서 다시 시작해요(도감은 그대로 이어져요).</p>
+      <button className="btn danger" onClick={() => { if (window.confirm('정말 가게를 정리할까요? 되돌릴 수 없어요.')) update((s) => closeShop(s, 'voluntary')); }}>가게 정리하기</button>
     </div>
   );
 }

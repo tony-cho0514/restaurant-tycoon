@@ -14,6 +14,7 @@ import { initialLearning } from './learning';
 import { initialLocal } from './localEvents';
 import { initialMessages } from './messages';
 import { finishedGuide } from './guide';
+import { initialBank } from './bank';
 import { initialOwner } from './owner';
 import { advanceTickInPlace } from './tick';
 import type { NewsItem } from './news';
@@ -79,7 +80,8 @@ function hasGameShape(x: unknown): x is GameState {
     obj(s.learning) && Array.isArray(s.learning.reports) && Array.isArray(s.learning.shockReports) && obj(s.learning.dex) &&
     Array.isArray(s.learning.decisions) && Array.isArray(s.learning.shocks) &&
     obj(s.local) && Array.isArray(s.local.events) && num(s.local.nextId) &&
-    obj(s.guide) && Array.isArray(s.guide.tabs) && Array.isArray(s.guide.seen) && (s.guide.goal === null || typeof s.guide.goal === 'string')
+    obj(s.guide) && Array.isArray(s.guide.tabs) && Array.isArray(s.guide.seen) && (s.guide.goal === null || typeof s.guide.goal === 'string') &&
+    obj(s.bank) && num(s.bank.negativeDays) && (s.bank.loan === null || allNums(s.bank.loan, ['principal', 'balance', 'payment', 'paymentsLeft', 'startDay', 'interestPaid']))
   );
 }
 
@@ -133,6 +135,7 @@ function withExtras(x: Record<string, unknown>): Record<string, unknown> {
   if (!obj(out.learning)) out = { ...out, learning: initialLearning() };
   if (!obj(out.local)) out = { ...out, local: initialLocal() };
   if (!obj(out.guide)) out = { ...out, guide: finishedGuide() };
+  if (!obj(out.bank)) out = { ...out, bank: initialBank() };
   return out;
 }
 

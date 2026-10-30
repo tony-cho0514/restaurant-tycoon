@@ -9,6 +9,7 @@ import { MessageToasts } from '../components/MessageToasts';
 import { PauseModal, type TabId } from '../components/PauseModal';
 import { PlaybackBar } from '../components/PlaybackBar';
 import { SaveGuard } from '../components/SaveGuard';
+import { ClosedShop } from './ClosedShop';
 import { SettingsMenu } from '../components/SettingsMenu';
 import { ShopScene, moodOf } from '../components/ShopScene';
 import '../scene.css';
@@ -55,12 +56,14 @@ function ActivePanel({ tab, onGoto, focusId, ...p }: PanelProps & { tab: TabId; 
   }
 }
 
-export function Main({ initial, now = Date.now, persist, saveFailed = false, onReset = () => {} }: {
+export function Main({ initial, now = Date.now, persist, saveFailed = false, onReset = () => {}, onNewShop = () => {} }: {
   initial: GameState;
   now?: () => number;
   persist: (s: GameState) => void;
   saveFailed?: boolean;
   onReset?: () => void;
+  /** 문 닫은 가게를 경력에 남기고 새 가게로 */
+  onNewShop?: (closed: GameState) => void;
 }) {
   const pb = usePlayback(initial, { now, persist });
   const [tab, setTab] = useState<TabId>('status');
@@ -108,6 +111,8 @@ export function Main({ initial, now = Date.now, persist, saveFailed = false, onR
     return () => clearInterval(id);
   }, [now]);
   useEffect(() => setClockNow(now()), [pb.state, now]);
+
+  if (pb.state.closed) return <ClosedShop state={pb.state} onNewShop={() => onNewShop(pb.state)} />;
 
   return (
     <main className="main">

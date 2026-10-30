@@ -1,7 +1,7 @@
 // 한 주 고정비와 「통장으로 몇 주 버티나」: 손님이 하나도 없어도 나가는 돈 기준(재료비·수수료 같은 변동비는 뺀다).
 import { APP_ADS_WEEKLY, UTILITIES_PER_HOUR } from './balance';
 import { dailyLabor } from './labor';
-import { NEIGHBORHOODS } from './neighborhoods';
+import { currentRent } from './lease';
 import { shiftHours } from './staffing';
 import { DAYS_PER_MONTH } from './time';
 import type { GameState } from './types';
@@ -16,7 +16,7 @@ export function weeklyFixed(s: GameState): FixedWeek {
     const h = shiftHours(s, x.shift);
     return a + dailyLabor(h, x.wage, h * openDays);
   }, 0);
-  const rent = Math.round((NEIGHBORHOODS[s.neighborhoodId].listing.monthlyRent * 7) / DAYS_PER_MONTH);
+  const rent = Math.round((currentRent(s) * 7) / DAYS_PER_MONTH);
   const labor = Math.round(laborPerDay * openDays);
   const utilities = Math.round(UTILITIES_PER_HOUR * hours * openDays);
   const ads = s.levers.appAds ? APP_ADS_WEEKLY : 0;

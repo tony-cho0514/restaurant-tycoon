@@ -10,6 +10,7 @@ import type { NewsState } from './news';
 import type { LearningState } from './learning';
 import type { LocalState } from './localEvents';
 import type { GuideState } from './guide';
+import type { BankState, ClosedShop } from './bank';
 import type { MessageState } from './messages';
 import type { OwnerState } from './owner';
 import type { OrderRecord } from './orders';
@@ -73,6 +74,10 @@ export interface GameState {
   local: LocalState;
   /** 첫 10분 안내: 열린 탭, 눌러 본 탭, 첫 주 목표 */
   guide: GuideState;
+  /** 대출과 통장 마이너스가 이어진 날 */
+  bank: BankState;
+  /** 문을 닫은 가게(폐업 부검을 보여 주고 새 가게로) */
+  closed?: ClosedShop | null;
 }
 
 export interface Settings {

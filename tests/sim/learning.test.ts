@@ -105,7 +105,7 @@ test('도감: 처음 겪을 때 내 숫자로 한 장씩 열리고 메시지가 
   // 한 번 연 카드는 다시 열리지 않는다
   const once = s28.messages.items.filter((m) => m.from === 'book' && m.text.includes('매출과 이익'));
   expect(once).toHaveLength(1);
-  expect(CARD_IDS).toHaveLength(20);
+  expect(CARD_IDS).toHaveLength(22);
 });
 
 test('배움 기록 없는 옛 저장도 열린다', () => {
@@ -118,4 +118,24 @@ test('배움 기록 없는 옛 저장도 열린다', () => {
   expect(loaded.ledger.days[0].groupRevenue).toBe(0);
   const later = playUntil(loaded, 30);
   expect(later.learning.reports).toHaveLength(1);
+});
+
+test('힌트는 원인마다 줄어든다: 처음엔 수단까지, 한 번 고치면 원인만, 두 번이면 숨김, 석 달 연속 적자면 다시 다', async () => {
+  const { hintLevelFor } = await import('../../src/sim/learning');
+  expect(hintLevelFor('labor', {}, 0)).toBe('full');
+  expect(hintLevelFor('labor', { labor: 1 }, 0)).toBe('cause');
+  expect(hintLevelFor('labor', { labor: 2 }, 0)).toBe('none');
+  expect(hintLevelFor('labor', { labor: 2 }, 3)).toBe('full');
+  expect(hintLevelFor('volume', { labor: 2 }, 0)).toBe('full');
+  expect(hintLevelFor('good', { good: 5 }, 0)).toBe('full');
+});
+
+test('지난달 원인의 몫이 이번 달에 나아지면 「고쳤다」로 센다', async () => {
+  const { fixedCause } = await import('../../src/sim/learning');
+  const base = { mode: 'change', parts: [], lost: { staff: 0, stock: 0, value: 0 }, kpi: { breakevenPerDay: 10, actualPerDay: 8 } } as unknown as import('../../src/sim/report').MonthReport;
+  const prev = { ...base, causeKey: 'labor' as const };
+  expect(fixedCause(prev, { ...base, parts: [{ key: 'labor', label: '인건비', amount: 50_000 }] })).toBe(true);
+  expect(fixedCause(prev, { ...base, parts: [{ key: 'labor', label: '인건비', amount: -1 }] })).toBe(false);
+  expect(fixedCause({ ...base, causeKey: 'local' }, { ...base, parts: [{ key: 'volume', label: '손님 수', amount: 1 }] })).toBe(true);
+  expect(fixedCause({ ...base, causeKey: 'lost', lost: { staff: 5, stock: 0, value: 90_000 } }, base)).toBe(true);
 });

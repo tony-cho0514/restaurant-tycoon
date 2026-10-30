@@ -2,7 +2,7 @@
 // 설명은 표준 정의에 맞출 것(배움이 목적이라 틀린 설명은 치명적이다).
 
 export type CardId =
-  | 'revenueProfit' | 'fixedVariable' | 'contribution' | 'breakeven' | 'costRate' | 'cashflow'
+  | 'revenueProfit' | 'fixedVariable' | 'contribution' | 'breakeven' | 'costRate' | 'cashflow' | 'lease' | 'debt'
   | 'elasticity' | 'reputation' | 'retention' | 'trust'
   | 'fx' | 'supplyShock' | 'hedging' | 'inventory'
   | 'bottleneck' | 'opportunityCost' | 'laborCost' | 'sustainability'
@@ -19,7 +19,7 @@ export interface CardDef {
 }
 
 export const CARD_IDS: CardId[] = [
-  'revenueProfit', 'fixedVariable', 'contribution', 'breakeven', 'costRate', 'cashflow',
+  'revenueProfit', 'fixedVariable', 'contribution', 'breakeven', 'costRate', 'cashflow', 'lease', 'debt',
   'elasticity', 'reputation', 'retention', 'trust', 'competition',
   'fx', 'supplyShock', 'hedging', 'inventory',
   'bottleneck', 'opportunityCost', 'laborCost', 'sustainability', 'seasonality',
@@ -55,6 +55,16 @@ export const CARDS: Record<CardId, CardDef> = {
     title: '현금흐름과 이익', category: '돈의 기본', icon: '🏦',
     text: '재료를 미리 사면 통장 돈은 바로 나가지만, 장부의 이익에는 그 재료를 쓸 때 비용으로 잡혀요. 그래서 이익이 나는데도 현금이 모자랄 수 있어요(흑자 도산).',
     howTo: '재료를 한꺼번에 많이 사거나 통장이 마이너스가 되면 열려요.',
+  },
+  lease: {
+    title: '임대차와 오르는 고정비', category: '돈의 기본', icon: '🏢',
+    text: '상가 월세는 계약을 갱신할 때 오를 수 있어요. 상가건물 임대차보호법은 한 번 올릴 때 5%까지만, 올린 뒤 1년 안에는 다시 못 올리게 막아 둬요. 고정비가 오르면 손익분기점도 함께 올라가요.',
+    howTo: '첫 재계약 때 열려요.',
+  },
+  debt: {
+    title: '빚과 이자', category: '돈의 기본', icon: '🏦',
+    text: '대출은 지금 모자란 현금을 미래의 돈으로 메우는 거예요. 버틸 시간은 벌어 주지만 이자만큼 이익이 줄고, 갚는 돈은 매달 고정비처럼 나가요. 빌린 돈으로 무엇을 바꿀지가 중요해요.',
+    howTo: '처음 대출을 받으면 열려요.',
   },
   elasticity: {
     title: '가격 탄력성', category: '가격·손님', icon: '🏷️',

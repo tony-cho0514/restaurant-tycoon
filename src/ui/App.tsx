@@ -3,6 +3,7 @@ import { createNewGame } from '../sim/newGame';
 import { BACKUP_KEY, CORRUPT_KEY, SAVE_KEY, loadGame, quarantineCorrupt, saveGame } from '../sim/save';
 import type { GameState } from '../sim/types';
 import { ErrorBoundary, type RecoveryActions } from './components/ErrorBoundary';
+import { loadCareer, recordClosedShop, withCareerDex } from './career';
 import { Main } from './screens/Main';
 import { NewGame } from './screens/NewGame';
 import './styles.css';
@@ -64,11 +65,12 @@ export function App() {
   if (!game) {
     return (
       <NewGame
+        career={loadCareer().shops}
         notice={corrupt ? CORRUPT_NOTICE : undefined}
         onImport={begin}
         onStart={({ neighborhoodId, shopName }) => {
           const now = Date.now();
-          begin(createNewGame({ seed: now >>> 0, neighborhoodId, shopName, nowMs: now }));
+          begin(withCareerDex(createNewGame({ seed: now >>> 0, neighborhoodId, shopName, nowMs: now }), loadCareer()));
         }}
       />
     );
@@ -81,6 +83,12 @@ export function App() {
         persist={persist}
         saveFailed={saveFailed}
         onReset={() => {
+          localStorage.removeItem(SAVE_KEY);
+          localStorage.removeItem(BACKUP_KEY);
+          setLoaded({ game: null, corrupt: false });
+        }}
+        onNewShop={(closed) => {
+          recordClosedShop(closed, Date.now());
           localStorage.removeItem(SAVE_KEY);
           localStorage.removeItem(BACKUP_KEY);
           setLoaded({ game: null, corrupt: false });

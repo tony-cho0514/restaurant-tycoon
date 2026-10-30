@@ -34,7 +34,7 @@ export function initialLocal(): LocalState {
 }
 
 /** 한 주에 동네 사건이 새로 생길 확률(평균 5~6주에 한 번쯤) */
-const WEEKLY_LOCAL_CHANCE = 0.2;
+const WEEKLY_LOCAL_CHANCE = 0.3;
 const LOCAL_KEEP = 30;
 /** 경쟁 가게가 다시 생기려면 지난번 경쟁이 끝나고 이만큼 지나야 한다 */
 const COMPETITOR_GAP_DAYS = 56;
@@ -163,8 +163,9 @@ export function localDemand(s: GameState, day: number): { hall: number; delivery
 // ── 새 사건 ──────────────────────────────────────────
 
 /** 월요일 개점 때: 동네에 새 일이 생길지 정한다(같은 종류는 겹치지 않는다). */
-export function planLocalWeek(s: GameState, rng: Rng): void {
-  if (!rng.chance(WEEKLY_LOCAL_CHANCE)) return;
+/** room: 새 악재가 들어설 여지(0~1, 숨 돌릴 틈). 동네 사정은 모두 악재다. */
+export function planLocalWeek(s: GameState, rng: Rng, room = 1): void {
+  if (!rng.chance(WEEKLY_LOCAL_CHANCE * room)) return;
   const day = s.clock.day;
   const pendingOrActive = (t: LocalType) => s.local.events.some((e) => e.type === t && e.endDay >= day);
   const lastCompetitor = Math.max(-Infinity, ...s.local.events.filter((e) => e.type === 'competitor').map((e) => e.endDay));

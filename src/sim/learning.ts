@@ -7,8 +7,9 @@ import { LEVERS, LEVER_IDS, type Levers } from './levers';
 import { MENU, PIZZA_IDS, type MenuActive, type MenuItemId } from './menu';
 import { pushMessage } from './messages';
 import type { NewsItem } from './news';
-import { buildMonthReport, monthLabel, reportMoney as money, type Decision, type MonthReport, type ReportInput } from './report';
+import { buildMonthReport, monthLabel, reportMoney as money, type CauseKey, type Decision, type HintLevel, type MonthReport, type ReportInput } from './report';
 import { shiftHours } from './staffing';
+import type { YearReport } from './yearEnd';
 import { DAY_NAMES } from './time';
 import type { GameState, Settings } from './types';
 import { UPGRADES, UPGRADE_IDS } from './upgradeOps';
@@ -56,6 +57,10 @@ export interface LearningState {
   decisions: Decision[];
   shocks: ShockTrack[];
   snap: Snapshot | null;
+  /** 원인별로 고친 횟수(힌트를 줄이는 기준). 옛 저장엔 없다. */
+  mastery?: Partial<Record<CauseKey, number>>;
+  /** 1년 결산. 옛 저장엔 없다. */
+  years?: YearReport[];
 }
 
 export function initialLearning(): LearningState {
@@ -277,12 +282,41 @@ function dayCards(s: GameState, rec: DayRecord): void {
 }
 
 /** 월말(그달 기록이 장부에 들어간 다음): 부검 리포트를 만들고, 처음이면 돈의 기본 카드를 연다. */
+/** 지난달 원인을 이번 달에 고쳤나(그 몫이 나아졌나) */
+export function fixedCause(prev: MonthReport, cur: MonthReport): boolean {
+  const k = prev.causeKey;
+  if (!k || k === 'first' || k === 'good') return false;
+  const part = (key: string) => cur.parts.find((p) => p.key === key)?.amount ?? 0;
+  if (k === 'lost') return cur.lost.value < prev.lost.value;
+  if (k === 'breakeven') {
+    const gap = (r: MonthReport) => (r.kpi.breakevenPerDay === null ? -Infinity : r.kpi.actualPerDay - r.kpi.breakevenPerDay);
+    return gap(cur) > gap(prev);
+  }
+  if (cur.mode !== 'change') return false;
+  if (k === 'burnout' || k === 'local') return part('volume') > 0;
+  return part(k) > 0;
+}
+
+/** 힌트 깊이: 처음 겪는 원인은 수단까지, 한 번 고쳤으면 원인만, 두 번이면 눌러야 보인다. 석 달 연속 적자면 다시 다 보여 준다. */
+export const LOSS_STREAK_FULL = 3;
+export function hintLevelFor(key: CauseKey | undefined, mastery: Partial<Record<CauseKey, number>>, lossStreak: number): HintLevel {
+  if (!key || key === 'first' || key === 'good' || lossStreak >= LOSS_STREAK_FULL) return 'full';
+  const m = mastery[key] ?? 0;
+  return m === 0 ? 'full' : m === 1 ? 'cause' : 'none';
+}
+
 export function monthEndLearning(s: GameState, monthIndex: number, local: ReportInput['local'] = []): MonthReport {
-  const report = buildMonthReport({
+  const built = buildMonthReport({
     monthIndex, number: s.learning.reports.length + 1, months: s.ledger.months, days: s.ledger.days,
     news: s.news.items, messages: s.messages.items, decisions: s.learning.decisions, local,
   });
-  s.learning = { ...s.learning, reports: [...s.learning.reports, report].slice(-REPORTS_KEEP) };
+  const prev = s.learning.reports.at(-1);
+  const mastery = { ...(s.learning.mastery ?? {}) };
+  if (prev && prev.causeKey && fixedCause(prev, built)) mastery[prev.causeKey] = (mastery[prev.causeKey] ?? 0) + 1;
+  const recent = [...s.learning.reports.slice(-(LOSS_STREAK_FULL - 1)), built];
+  const lossStreak = recent.length >= LOSS_STREAK_FULL && recent.every((r) => r.profit < 0) ? LOSS_STREAK_FULL : 0;
+  const report: MonthReport = { ...built, hintLevel: hintLevelFor(built.causeKey, mastery, lossStreak) };
+  s.learning = { ...s.learning, reports: [...s.learning.reports, report].slice(-REPORTS_KEEP), mastery };
   pushMessage(s, {
     from: 'book', name: '부검 리포트', text: `${monthLabel(monthIndex)} 부검 리포트가 나왔어요. 이익 ${money(report.profit)}${report.prevProfit !== null ? `(지난달보다 ${report.profit - report.prevProfit >= 0 ? '+' : ''}${money(report.profit - report.prevProfit)})` : ''}`,
     tone: report.profit >= 0 ? 'good' : 'bad', important: true, action: 'learn',

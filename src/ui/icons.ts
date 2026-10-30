@@ -78,6 +78,8 @@ const SENDER_ICON: Record<Sender, string> = {
   news: '📰',
   owner: '🧑‍🍳',
   book: '📚',
+  landlord: '🏢',
+  bank: '🏦',
 };
 
 /** 메시지 보낸 쪽 그림: 리뷰는 배달앱·홀, 뉴스는 사건 종류마다 */

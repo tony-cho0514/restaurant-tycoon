@@ -12,11 +12,12 @@ import type { NewsItem, ShockType } from './news';
 import { ownerAway } from './owner';
 import type { Channel } from './ratings';
 import { Rng } from './rng';
+import { pickRegular, regularReview, type RegularMemory } from './regulars';
 import { DAY_NAMES } from './time';
 import type { GameState } from './types';
 
 export type { Topic };
-export type Sender = 'review' | 'request' | 'group' | 'staff' | 'supplier' | 'news' | 'owner' | 'book';
+export type Sender = 'review' | 'request' | 'group' | 'staff' | 'supplier' | 'news' | 'owner' | 'book' | 'landlord' | 'bank';
 /** 메시지에서 바로 가 볼 탭 */
 export type MessageAction = 'menu' | 'inventory' | 'levers' | 'shop' | 'staff' | 'ledger' | 'learn' | 'sales';
 /** 답장을 받을 수 있는 메시지: 나쁜 리뷰, 손님 요청(무엇을 바라는지) */
@@ -56,6 +57,8 @@ export interface Message {
   hit?: number;
   /** 사장님이 단 답장(리뷰 답글 운영 수단이 켜져 있으면 자동 답글) */
   reply?: { id: ReplyId; text: string };
+  /** 이름 있는 단골이 쓴 리뷰면 그 단골 */
+  regular?: string;
 }
 
 export interface MessageState {
@@ -63,6 +66,8 @@ export interface MessageState {
   nextId: number;
   /** 답장 뒤에 일어날 일 */
   pending: FollowUp[];
+  /** 단골의 기억(기분·마지막 답장·발길 끊은 날). 옛 저장엔 없다. */
+  regulars?: Record<string, RegularMemory>;
 }
 
 export const MESSAGES_KEEP = 300;
@@ -160,6 +165,9 @@ function reviewMessage(s: GameState, c: HourCtx, rng: Rng): void {
   const topic = reviewTopic(r, c, s, rng);
   const stars = starsOf(r.sat);
   const names = NICKNAMES[s.neighborhoodId][r.ch];
+  // 리뷰 셋 중 하나쯤은 이름 있는 단골이 쓴다(지난 답장을 기억하고 말버릇이 있다).
+  const regular = pickRegular(s, r.ch, rng);
+  const base = fill(rng.pick(REVIEW_TEXT[topic][r.ch]), { pizza: pizzaName(r.pizza), min: String(Math.round(r.ch === 'hall' ? Math.min(r.wait, 60) : r.wait)) });
   // 별 1~2개 리뷰엔 답장할 수 있다. 리뷰 답글 운영 수단을 켜 두면 사과 답글이 자동으로 달린다.
   const bad = stars <= 2;
   const alpha = (r.ch === 'hall' ? 0.02 : 0.03) * (s.levers.reviewReplies ? 0.7 : 1);
@@ -168,9 +176,10 @@ function reviewMessage(s: GameState, c: HourCtx, rng: Rng): void {
       ask: 'review' as const, replyBy: s.clock.day + REPLY_DAYS, hit: Math.max(0, s.ratings[r.ch] - r.sat) * alpha,
       reply: s.levers.reviewReplies ? { id: 'auto' as const, text: AUTO_REPLY } : undefined,
     } : {}),
-    from: 'review', channel: r.ch, name: rng.pick(names), stars, topic,
+    from: 'review', channel: r.ch, name: regular ? regular.name : rng.pick(names), stars, topic,
+    ...(regular ? { regular: regular.id } : {}),
     // 홀 대기는 한 시간에서 끊는다(그보다 오래면 손님은 그냥 기다린 것으로 말한다). 배달은 주문 기록의 분과 같게.
-    text: fill(rng.pick(REVIEW_TEXT[topic][r.ch]), { pizza: pizzaName(r.pizza), min: String(Math.round(r.ch === 'hall' ? Math.min(r.wait, 60) : r.wait)) }),
+    text: regular ? regularReview(s, regular, stars, base, rng) : base,
     tone: stars >= 4 ? 'good' : stars <= 2 ? 'bad' : 'neutral',
     action: stars <= 3 ? TOPIC_ACTION[topic] : undefined,
   });

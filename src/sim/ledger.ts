@@ -30,6 +30,10 @@ export interface DayRecord {
   purchases: number;
   /** 사장님 개인 지출(휴가 등): 통장에서 나가지만 가게 이익엔 안 잡힘 */
   ownerDraw: number;
+  /** 대출 이자(비용). 옛 저장은 불러올 때 0으로 채운다. */
+  interest: number;
+  /** 대출 원금 흐름: 빌리면 +, 갚으면 −(이익엔 안 잡힘) */
+  loan: number;
   usage: Usage;
   /** 그날 개점 시세(7일 전 대비 표시용) */
   prices: Partial<Record<IngredientId, number>>;
@@ -49,7 +53,7 @@ export const DAYS_KEEP = 112;
 
 export const NUMERIC_KEYS = [
   'hallOrders', 'deliveryOrders', 'groupOrders', 'groupRevenue', 'lostOrders', 'stockoutOrders', 'revenueHall', 'revenueDelivery', 'foodCost',
-  'serviceCost', 'wasteCost', 'labor', 'rent', 'appFees', 'cardFees', 'deliveryFees', 'utilities', 'ads', 'investment', 'purchases', 'ownerDraw',
+  'serviceCost', 'wasteCost', 'labor', 'rent', 'appFees', 'cardFees', 'deliveryFees', 'utilities', 'ads', 'investment', 'purchases', 'ownerDraw', 'interest', 'loan',
 ] as const;
 
 export function emptyDay(day: number, monthIndex: number): DayRecord {
@@ -60,6 +64,8 @@ export function emptyDay(day: number, monthIndex: number): DayRecord {
     foodCost: 0, serviceCost: 0, wasteCost: 0, labor: 0, rent: 0, appFees: 0, cardFees: 0, deliveryFees: 0, utilities: 0, ads: 0, investment: 0,
     purchases: 0,
     ownerDraw: 0,
+    interest: 0,
+    loan: 0,
     usage: {},
     prices: {},
     used: {},
@@ -91,7 +97,7 @@ export function notePaid(rec: DayRecord, id: IngredientId, qty: number, cost: nu
 export function profitOf(r: DayRecord | MonthRecord): number {
   return (
     r.revenueHall + r.revenueDelivery -
-    r.foodCost - r.serviceCost - r.wasteCost - r.labor - r.rent - r.appFees - (r.cardFees ?? 0) - r.deliveryFees - r.utilities - r.ads - (r.investment ?? 0)
+    r.foodCost - r.serviceCost - r.wasteCost - r.labor - r.rent - r.appFees - (r.cardFees ?? 0) - r.deliveryFees - r.utilities - r.ads - (r.investment ?? 0) - (r.interest ?? 0)
   );
 }
 

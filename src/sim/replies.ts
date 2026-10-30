@@ -1,5 +1,6 @@
 // 메시지 답장: 나쁜 리뷰엔 사과·쿠폰·반박, 손님 요청엔 들어주기·약속·거절.
 // 비용은 버튼에 정확히 보이고, 효과(평점이 얼마나 돌아오나, 손님이 다시 오나)는 해 봐야 안다.
+import { rememberReply } from './regulars';
 import { FOLLOWUP_TEXT, NICKNAMES, REPLY_TEXT } from '../content/messageTemplates';
 import {
   APOLOGY_RESTORE, COUPON_GOODWILL, COUPON_RETURN_CHANCE, COUPON_RETURN_DAYS, COUPON_VALUE, MENU_DEV_COST, PRICE_CUT, PROMISE_DAYS,
@@ -214,6 +215,7 @@ export function answerMessage(s0: GameState, msgId: number, id: ReplyId): GameSt
   }
   // 메시지 목록이 새로 만들어졌을 수 있으니(다른 손님 댓글) id로 다시 찾아 답장을 단다.
   s.messages = { ...s.messages, items: s.messages.items.map((x) => (x.id === msgId ? { ...x, reply: { id, text } } : x)) };
+  if (m0.regular && (id === 'apology' || id === 'coupon' || id === 'rebut')) rememberReply(s, m0.regular, id);
   return s;
 }
 

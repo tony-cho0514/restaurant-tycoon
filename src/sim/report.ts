@@ -7,10 +7,13 @@ import type { Message } from './messages';
 import type { NewsItem } from './news';
 import { DAYS_PER_MONTH, calendar } from './time';
 
+export type CauseKey = PartKey | 'lost' | 'breakeven' | 'burnout' | 'local' | 'first' | 'good';
+export type HintLevel = 'full' | 'cause' | 'none';
+
 export type PartKey =
   | 'revenue' | 'food' | 'fees' | 'service'
   | 'volume' | 'group' | 'ingredients' | 'perOrder'
-  | 'waste' | 'labor' | 'rentUtil' | 'ads' | 'investment';
+  | 'waste' | 'labor' | 'rentUtil' | 'ads' | 'investment' | 'interest';
 
 export interface ReportPart {
   key: PartKey;
@@ -60,6 +63,10 @@ export interface MonthReport {
   /** 가장 크게 영향을 준 원인과 써 볼 수단 */
   cause: string;
   hint: string | null;
+  /** 원인 이름표(숙달도 계산용). 옛 저장엔 없다. */
+  causeKey?: CauseKey;
+  /** 힌트를 얼마나 보여 줄지: 같은 원인을 고친 횟수로 정한다. 옛 저장엔 없다(번호로). */
+  hintLevel?: HintLevel;
 }
 
 const money = (n: number) => {
@@ -127,6 +134,7 @@ function structureParts(m: MonthRecord): ReportPart[] {
     { key: 'rentUtil', label: '월세·공과금', amount: -(m.rent + m.utilities) },
     { key: 'ads', label: '광고', amount: -m.ads },
     { key: 'investment', label: '투자(메뉴 개발·업그레이드)', amount: -(m.investment ?? 0) },
+    { key: 'interest', label: '대출 이자', amount: -(m.interest ?? 0) },
   ];
   // 원 단위로 반올림하고, 반올림 차이는 재료비가 맡아 합계가 이번 달 이익과 같게 한다.
   const rounded = parts.map((p) => ({ ...p, amount: Math.round(p.amount) }));
@@ -159,6 +167,7 @@ function changeParts(cur: MonthRecord, prev: MonthRecord, curDays: DayRecord[], 
     { key: 'rentUtil', label: '월세·공과금', amount: -(cur.rent + cur.utilities - prev.rent - prev.utilities) },
     { key: 'ads', label: '광고', amount: -(cur.ads - prev.ads) },
     { key: 'investment', label: '투자(메뉴 개발·업그레이드)', amount: -((cur.investment ?? 0) - (prev.investment ?? 0)), detail: '투자는 앞으로 돌아올 돈이에요' },
+    { key: 'interest', label: '대출 이자', amount: -((cur.interest ?? 0) - (prev.interest ?? 0)) },
   ];
   // 주문당 남는 돈은 나머지: 몫을 다 더하면 실제 이익 변화와 원 단위까지 같아진다.
   const delta = Math.round(profitOf(cur)) - Math.round(profitOf(prev));
@@ -179,6 +188,7 @@ const HINT: Record<PartKey | 'lost' | 'breakeven' | 'burnout' | 'local', [string
   rentUtil: ['월세·공과금이 늘었어요', '영업시간을 늘렸다면 늘어난 시간에 손님이 충분한지 보세요.'],
   ads: ['광고비가 늘었어요', '광고를 켠 뒤 배달 주문이 광고비보다 많이 늘었는지 보세요.'],
   investment: ['투자를 했어요', '투자는 앞으로 돌아올 돈이에요. 몇 달 안에 회수되는지 지켜보세요.'],
+  interest: ['대출 이자가 나갔어요', '여유가 생기면 장부에서 남은 대출을 일찍 갚아 이자를 줄일 수 있어요.'],
   revenue: ['매출이 적어요', '하루 주문을 늘릴 방법(가격·광고·메뉴)을 찾아보세요.'],
   food: ['재료비 비중이 커요', '원가율이 높은 메뉴의 가격을 보세요.'],
   fees: ['수수료·배달비가 커요', '배달팁을 손님이 더 내게 하거나 홀 손님을 늘려 보세요.'],
@@ -187,21 +197,21 @@ const HINT: Record<PartKey | 'lost' | 'breakeven' | 'burnout' | 'local', [string
   breakeven: ['하루 주문이 손익분기점보다 적어요', '고정비(알바 시간·영업시간)를 줄이거나 주문 하나에 남는 돈을 늘려야 해요.'],
 };
 
-function pickCause(parts: ReportPart[], lostValue: number, kpi: Kpi, mode: MonthReport['mode'], burnout: boolean, slow: string[]): [string, string] {
+function pickCause(parts: ReportPart[], lostValue: number, kpi: Kpi, mode: MonthReport['mode'], burnout: boolean, slow: string[]): [string, string, CauseKey] {
   if (mode === 'structure') {
-    if (kpi.breakevenPerDay !== null && kpi.actualPerDay < kpi.breakevenPerDay) return HINT.breakeven;
-    if (lostValue > 0) return HINT.lost;
-    return ['첫 달 장사를 마쳤어요', '다음 달부터는 지난달과 견줘서 무엇이 달라졌는지 쪼개 보여 드려요.'];
+    if (kpi.breakevenPerDay !== null && kpi.actualPerDay < kpi.breakevenPerDay) return [...HINT.breakeven, 'breakeven'];
+    if (lostValue > 0) return [...HINT.lost, 'lost'];
+    return ['첫 달 장사를 마쳤어요', '다음 달부터는 지난달과 견줘서 무엇이 달라졌는지 쪼개 보여 드려요.', 'first'];
   }
   const worst = parts.filter((p) => p.amount < 0).sort((a, b) => a.amount - b.amount)[0];
-  if (lostValue > 0 && (!worst || lostValue > -worst.amount)) return HINT.lost;
+  if (lostValue > 0 && (!worst || lostValue > -worst.amount)) return [...HINT.lost, 'lost'];
   if (!worst) {
     const best = [...parts].sort((a, b) => b.amount - a.amount)[0];
-    return [best ? `가장 크게 도운 건 「${best.label}」이에요` : '지난달과 거의 같아요', '잘된 이유를 다음 달에도 이어 가 보세요.'];
+    return [best ? `가장 크게 도운 건 「${best.label}」이에요` : '지난달과 거의 같아요', '잘된 이유를 다음 달에도 이어 가 보세요.', 'good'];
   }
-  if (worst.key === 'volume' && burnout) return HINT.burnout;
-  if (worst.key === 'volume' && slow.length > 0) return [`${slow.join('·')} 때문에 주문이 줄었어요`, HINT.local[1]];
-  return HINT[worst.key];
+  if (worst.key === 'volume' && burnout) return [...HINT.burnout, 'burnout'];
+  if (worst.key === 'volume' && slow.length > 0) return [`${slow.join('·')} 때문에 주문이 줄었어요`, HINT.local[1], 'local'];
+  return [...HINT[worst.key], worst.key];
 }
 
 export interface ReportInput {
@@ -232,7 +242,7 @@ export function buildMonthReport(x: ReportInput): MonthReport {
   const burnout = x.news.some((n) => inMonth(n.day) && n.headline.startsWith('[사장님] 과로'));
   const local = x.local ?? [];
   const slow = [...new Set(local.filter((e) => e.tone === 'bad').map((e) => e.label))];
-  const [cause, hint] = pickCause(parts, lostValue, kpi, mode, burnout, slow);
+  const [cause, hint, causeKey] = pickCause(parts, lostValue, kpi, mode, burnout, slow);
   const events = x.news
     .filter((n) => inMonth(n.day) && (n.kind === 'fire' || (n.important && n.kind === 'announce')) && !n.headline.startsWith('「'))
     .map((n) => ({ day: n.day, text: n.headline.replace(/^\[[^\]]+\]\s*/, ''), tone: n.tone }))
@@ -273,5 +283,7 @@ export function buildMonthReport(x: ReportInput): MonthReport {
     },
     cause,
     hint,
+    causeKey,
+    hintLevel: 'full',
   };
 }

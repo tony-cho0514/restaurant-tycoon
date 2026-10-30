@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CARDS, CARD_IDS } from '../../content/dexCards';
 import type { MonthReport } from '../../sim/learning';
+import type { YearReport } from '../../sim/yearEnd';
 import type { TabKey } from '../../sim/guide';
 import type { Kpi, PartKey, ReportPart } from '../../sim/report';
 import { calendar } from '../../sim/time';
@@ -20,7 +21,7 @@ const PART_TAB: Record<PartKey, TabKey> = {
   revenue: 'menu', perOrder: 'menu', volume: 'sales', group: 'sales',
   food: 'inventory', ingredients: 'inventory', waste: 'inventory',
   fees: 'shop', rentUtil: 'shop', investment: 'shop',
-  service: 'levers', ads: 'levers', labor: 'staff',
+  service: 'levers', ads: 'levers', labor: 'staff', interest: 'ledger',
 };
 const TAB_NAME: Record<TabKey, string> = {
   status: '현황', sales: '매출·주문', menu: '메뉴', inventory: '재고', staff: '직원', shop: '가게', levers: '운영 수단', ledger: '장부', messages: '메시지', learn: '배움',
@@ -50,17 +51,18 @@ const KPI_ROWS: { label: string; get: (k: Kpi) => string }[] = [
   { label: '실제 하루 평균 주문', get: (k) => `${k.actualPerDay.toFixed(1)}건` },
 ];
 
-/** 힌트는 점점 줄어든다: 1~3번째 리포트는 원인+써 볼 수단, 4~6번째는 원인만, 그 뒤엔 숨김(눌러서 보기) */
+/** 힌트는 원인마다 줄어든다: 처음 겪는 원인은 써 볼 수단까지, 한 번 고쳤으면 원인만, 두 번이면 눌러서 보기(석 달 연속 적자면 다시 다).
+ *  옛 저장의 리포트엔 깊이가 없어서 번호로 정한다. */
 function Hint({ r }: { r: MonthReport }) {
   const [open, setOpen] = useState(false);
-  const level = r.number <= 3 ? 'full' : r.number <= 6 ? 'cause' : 'none';
+  const level = r.hintLevel ?? (r.number <= 3 ? 'full' : r.number <= 6 ? 'cause' : 'none');
   if (open || level === 'full') {
     return <p className="report-hint">💡 <b>{r.cause}.</b> {r.hint}</p>;
   }
   return (
     <div className="report-hint">
-      {level === 'cause' && <p>💡 <b>{r.cause}.</b></p>}
-      <button className="btn mini" onClick={() => setOpen(true)}>{level === 'cause' ? '써 볼 수단 보기' : '힌트 보기'}</button>
+      {level === 'cause' ? <p>💡 <b>{r.cause}.</b></p> : <p>🤔 이번 달 가장 아팠던 원인은 뭐였을까요? 아래 몫을 보고 먼저 짐작해 보세요.</p>}
+      <button className="btn mini" onClick={() => setOpen(true)}>{level === 'cause' ? '써 볼 수단 보기' : '원인 보기'}</button>
     </div>
   );
 }
@@ -155,8 +157,22 @@ function ReportView({ r, onGoto }: { r: MonthReport; onGoto?: (t: TabKey) => voi
   );
 }
 
+function YearCard({ y }: { y: YearReport }) {
+  return (
+    <article className="report year-card" aria-label={`${y.year}년차 결산`}>
+      <h4 className="report-title">🎊 {y.year}년차 결산 · 이익 <span className={y.profit < 0 ? 'neg' : ''}>{manwon(y.profit)}</span></h4>
+      <div className="chips">{y.titles.map((t) => <span key={t} className="chip tone-good">{t}</span>)}</div>
+      <p className="sub">
+        매출 {manwon(y.revenue)} · 적자 난 달 {y.lossMonths}달 · 겪은 악재 {y.hardships}번{y.burnout ? ' · 사장님이 쓰러진 적 있음' : ''} · 도감 {y.dex}장
+        {y.best && ` · 가장 좋았던 달 ${y.best.label}(${manwon(y.best.profit)})`}{y.worst && ` · 가장 아팠던 달 ${y.worst.label}(${manwon(y.worst.profit)})`}
+      </p>
+    </article>
+  );
+}
+
 function Reports({ state, onGoto }: { state: GameState; onGoto?: (t: TabKey) => void }) {
   const reports = state.learning.reports;
+  const years = state.learning.years ?? [];
   const [sel, setSel] = useState<number | null>(null);
   const r = reports.find((x) => x.monthIndex === sel) ?? reports.at(-1);
   const shocks = [...state.learning.shockReports].reverse();
@@ -170,6 +186,7 @@ function Reports({ state, onGoto }: { state: GameState; onGoto?: (t: TabKey) => 
           ))}
         </div>
       )}
+      {years.length > 0 && <YearCard y={years[years.length - 1]} />}
       {r && <ReportView r={r} onGoto={onGoto} />}
       {shocks.length > 0 && (
         <>
